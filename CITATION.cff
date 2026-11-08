@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the NEITH-ACE article."
+title: "NEITH-ACE: Authenticated Completeness and Loss Attribution for Edge Telemetry"
+authors:
+  - family-names: "El-Hadedy"
+    given-names: "Mohamed"
+    affiliation: "California State Polytechnic University, Pomona; University of Illinois Urbana-Champaign"
+    email: mealy@cpp.edu
+repository-code: "https://github.com/mealycpp/neith-ace"
+license: MIT
+year: 2026

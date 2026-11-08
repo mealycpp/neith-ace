@@ -1,0 +1,10 @@
+build/
+results/
+__pycache__/
+*.pyc
+*.so
+*.o
+*.state
+*.state.tmp
+*.tgz
+neith-ace-results_*.tgz
