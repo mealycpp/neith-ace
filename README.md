@@ -91,3 +91,7 @@ Developed in the Reconfigurable Space Computing Lab (RSCL) at California State P
   <img src="assets/dod.png" alt="U.S. DoD — Award W911NF-24-1-0265" height="150"/>
   <img src="assets/afrl.png" alt="AFRL — Agreement FA8650-24-2-2403" height="150"/>
 </p>
+
+## F´ components
+
+`fprime/` holds the capture adapter and custodian as F´ active components (see `fprime/README.md`). The adapter was measured inside a running F´ deployment on the Pi 4; `results/fprime/` has the log.
