@@ -264,15 +264,16 @@ class SensorState:
     u_max: int = 0
     mfs: list = field(default_factory=list)        # manifests received, not yet committed
     v_seen: set = field(default_factory=set)
+    mf_hold: dict = field(default_factory=dict)    # manifests waiting for an earlier one
+    mf_next: int = 1                               # next manifest index to commit
 
 class IntegrityService:
     """Windows are assigned by ingestion time t(tau) = floor((tau - tau0)/Delta), tau0 = 0."""
-    def __init__(self, cfg, keys, signer, H, mac, adapter_pubs=None):
+    def __init__(self, cfg, keys, signer, H, mac, adapter_pubs=None, store_pub=None):
         self.cfg, self.keys, self.signer, self.H, self.mac = cfg, keys, signer, H, mac
         self.adapter_pubs = adapter_pubs or {}
         self.sensors = {i: SensorState() for i in keys}
-        apk = enc(*[(i, self.adapter_pubs[i][0], self.adapter_pubs[i][1]) for i in sorted(self.adapter_pubs)])
-        self.prev = H(b"\x06" + enc(cfg.epoch, cfg.enc(), signer.public()[1], apk))
+        self.prev = genesis_root(H, cfg, signer.public(), self.adapter_pubs, store_pub)
         self.genesis = self.prev
         self.recv, self.authfail = {}, {}          # t -> {(i,s): chunk}, t -> set((i,s))
         self.pending_receipts = []                 # (t_committed, q, bitmap)
@@ -339,8 +340,13 @@ class IntegrityService:
         body = enc("mf", self.cfg.epoch, i, v, s_hat, m_prev, bool(final), items)
         if i in self.adapter_pubs and not xmss_verify(self.adapter_pubs[i], sig, self.H(b"\x0a" + body)):
             return "reject"
-        self.sensors[i].v_seen.add(v)
-        self.sensors[i].mfs.append((v, s_hat, m_prev, bool(final), [tuple(x) for x in items], sig))
+        st = self.sensors[i]
+        st.v_seen.add(v)
+        # manifests are committed in chain order: a later one waits until every earlier one
+        # has arrived (a lost manifest is re-requested), so an honest record never skips one
+        st.mf_hold[v] = (v, s_hat, m_prev, bool(final), [tuple(x) for x in items], sig)
+        while st.mf_next in st.mf_hold:
+            st.mfs.append(st.mf_hold.pop(st.mf_next)); st.mf_next += 1
         return "ok"
 
     def on_receipt(self, t, q, bitmap):
@@ -398,7 +404,8 @@ class IntegrityService:
         R = H(b"\x05" + enc(cfg.epoch, t, N) + T + D + self.prev)
         cp = None
         if force_checkpoint or t % cfg.k == cfg.k - 1:
-            cp = self.signer.sign(H(b"\x07" + enc(cfg.epoch, t) + R))
+            # the shutdown checkpoint carries end=1, so a verifier knows the schedule has ended
+            cp = self.signer.sign(H(b"\x07" + enc(cfg.epoch, t, bool(settlement)) + R))
         self.published.append(((t, N, T, D), rec_enc, R, cp))
         self.prev = R
         self.committed[t] = ids
@@ -428,11 +435,29 @@ class Store:
     def get(self, t, pos):
         return self.data.get((t, pos))
 
+# ---------------------------------------------------------------- genesis
+def genesis_root(H, cfg, pub, adapter_pubs, store_pub):
+    """R_{-1}: fixes the configuration (incl. declaration mode), the checkpoint key, every
+    adapter manifest key, and the store receipt key."""
+    apk = enc(*[(i, adapter_pubs[i][0], adapter_pubs[i][1]) for i in sorted(adapter_pubs)])
+    spk = enc(store_pub[0], store_pub[1]) if store_pub is not None else b""
+    return H(b"\x06" + enc(cfg.epoch, cfg.enc(), pub[1], apk, spk))
+
 # ---------------------------------------------------------------- verifier
 class Verifier:
+    """The verifier's inputs (cfg, checkpoint key, adapter keys, store key) are its own,
+    provisioned out of band; the genesis root it is handed must match them."""
     def __init__(self, cfg, H, pub, store_pub, genesis, adapter_pubs=None):
         self.cfg, self.H, self.pub, self.store_pub, self.genesis = cfg, H, pub, store_pub, genesis
         self.adapter_pubs = adapter_pubs or {}
+
+    @staticmethod
+    def _due(deadline, now, contacts):
+        if now is None:
+            return True
+        if contacts is None:
+            return deadline <= now
+        return any(e >= deadline and st_ <= now for (st_, e) in contacts)
 
     def verify(self, published, receipts, store=None, now=None, contacts=None):
         try:
@@ -447,8 +472,12 @@ class Verifier:
         if a contact ended after its deadline (planned outages are not withholding).
         Returns (verdict, absences, info)."""
         cfg, H = self.cfg, self.H
+        if self.genesis != genesis_root(H, cfg, self.pub, self.adapter_pubs, self.store_pub):
+            return "INVALID", [], {"reason": "genesis does not match the verifier's trusted inputs"}
+        if cfg.decl == "signed" and not self.adapter_pubs:
+            return "INVALID", [], {"reason": "signed declarations configured but no adapter keys"}
         prev, absences = self.genesis, []
-        verified_through, last_cp_t = -1, -1
+        verified_through, last_cp_t, end_cp = -1, -1, None
         decoded = []
         for idx, (header, rec_enc, R_claim, cp) in enumerate(published):
             t, N, T, D = header
@@ -459,29 +488,51 @@ class Verifier:
             R = H(b"\x05" + enc(cfg.epoch, t, N) + T + D + prev)
             if R != R_claim:
                 return "INVALID", [], {"reason": f"root mismatch t={t}"}
-            if cp is not None or t % cfg.k == cfg.k - 1:
-                if cp is None:
+            if cp is None and t % cfg.k == cfg.k - 1:
+                # a scheduled checkpoint not yet present is pending until T_t + gamma + theta
+                if self._due(cfg.delta * (t + 1) + cfg.gamma + cfg.theta, now, contacts):
                     return "WITHHELD", [], {"reason": f"checkpoint missing t={t}"}
-                if not xmss_verify(self.pub, cp, H(b"\x07" + enc(cfg.epoch, t) + R)):
+            if cp is not None:
+                if xmss_verify(self.pub, cp, H(b"\x07" + enc(cfg.epoch, t, False) + R)):
+                    pass
+                elif xmss_verify(self.pub, cp, H(b"\x07" + enc(cfg.epoch, t, True) + R)):
+                    if idx != len(published) - 1:
+                        return "INVALID", [], {"reason": f"windows published after the end checkpoint t={t}"}
+                    end_cp = t
+                else:
                     return "INVALID", [], {"reason": f"checkpoint signature t={t}"}
                 last_cp_t = t
             decoded.append((t, N, T, rec_enc))
             prev = R
-        # tail beyond last checkpoint is unauthenticated -> withheld
+        # Windows after the last checkpoint are unauthenticated. They are *pending* while the
+        # checkpoint that will cover them is not yet due, and are then excluded from the audit
+        # scope (the result can be at most PREFIX); once that checkpoint's deadline has passed
+        # at a contact, the tail is WITHHELD.
         n = len(published)
+        # the shutdown checkpoint (signed with end=1) closes the epoch; no later checkpoint is expected
+        epoch_end = end_cp
+        pending_tail = None
         if n and last_cp_t < n - 1:
-            return "WITHHELD", [], {"reason": f"windows {last_cp_t+1}..{n-1} lack a checkpoint"}
+            next_cp = last_cp_t + cfg.k if last_cp_t >= 0 else cfg.k - 1
+            deadline = cfg.delta * (next_cp + 1) + cfg.gamma + cfg.theta
+            due_now = now is None or (deadline <= now if contacts is None else
+                                      any(e >= deadline and st_ <= now for (st_, e) in contacts))
+            if due_now:
+                return "WITHHELD", [], {"reason": f"windows {last_cp_t+1}..{n-1} lack a checkpoint"}
+            pending_tail = (last_cp_t + 1, n - 1)
+            decoded = decoded[:last_cp_t + 1]
         if now is not None:     # every checkpoint whose deadline has passed must be present
             def publishable(d):   # was there a contact after deadline d?
                 if contacts is None:
                     return d <= now
                 return any(e >= d and st_ <= now for (st_, e) in contacts)
-            due = [t for t in range(int(now // cfg.delta) + 1)
+            horizon = int(now // cfg.delta) if epoch_end is None else min(int(now // cfg.delta), epoch_end)
+            due = [t for t in range(horizon + 1)
                    if t % cfg.k == cfg.k - 1 and publishable(cfg.delta * (t + 1) + cfg.gamma + cfg.theta)]
             if due and due[-1] > last_cp_t:
                 return "WITHHELD", [], {"reason": f"checkpoint for t={due[-1]} overdue"}
         # completeness: rebuild accounts from records (records verified via D)
-        acct, stale = {}, False
+        acct, stale, stale_decl = {}, False, False
         recs_by_t = {}; repairs = []     # (i, s, class of the recorded gap, window that closed it)
         for t, N, T, rec_enc in decoded:
             recs = _decode_records(rec_enc)
@@ -504,6 +555,9 @@ class Verifier:
                         A["miss"].discard(s)
                     elif not (a <= s <= b):
                         return "INVALID", [], {"reason": f"auth gap {s} outside interval"}
+                for s in miss:
+                    if not (a <= s <= b) or s in auth or s in A["miss"]:
+                        return "INVALID", [], {"reason": f"missing gap {s} outside interval or repeated sensor {i} t={t}"}
                 A["miss"] |= set(miss); A["auth"] |= set(auth)
                 A["next"] = b + 1
                 stale = stale or st
@@ -523,8 +577,10 @@ class Verifier:
                     i = rec[0]; mfs = rec[11] if len(rec) > 11 else []
                     for (v, s_hat, m_prev, final, items, sig) in mfs:
                         v_exp, m_exp = chain[i]
-                        if v != v_exp + 1 or m_prev != m_exp:
-                            return "WITHHELD", absences, {"reason": f"manifest chain broken sensor {i} at v={v}"}
+                        if v != v_exp + 1:
+                            return "WITHHELD", absences, {"reason": f"manifest {v_exp + 1} of sensor {i} skipped"}
+                        if m_prev != m_exp:
+                            return "INVALID", absences, {"reason": f"manifest chain link wrong sensor {i} at v={v}"}
                         if finals.get(i):
                             return "INVALID", absences, {"reason": f"capture after FINAL sensor {i} v={v}"}
                         body = enc("mf", cfg.epoch, i, v, s_hat, m_prev, bool(final), [tuple(x) for x in items])
@@ -549,45 +605,75 @@ class Verifier:
                 if A["next"] - 1 > fr:
                     # committed chunks beyond the last declaration are source-unconfirmed:
                     # the history cannot be COMPLETE until a manifest covers them.
-                    stale = True
+                    stale_decl = True
                     undeclared_tail[i] = (fr + 1, A["next"] - 1)
                 if A["next"] - 1 < fr:
                     # adapter declared more than the service accounted: the tail is missing
                     for s_ in range(A["next"], fr + 1):
                         absences.append((i, s_, "IngestAbsent"))
-        # custody: receipts (signed by store) + store audit
+        # every committed identity appears once in the whole history
+        seen_ids, ids_by_t = set(), {}
         for t, N, T, rec_enc in decoded:
-            ids = _leaf_ids(recs_by_t, t, N, decoded)
+            ids = _leaf_ids(recs_by_t, t, N, decoded); ids_by_t[t] = ids
+            for x in ids:
+                if x in seen_ids:
+                    return "INVALID", absences, {"reason": f"identity {x} committed twice"}
+                seen_ids.add(x)
+        if cfg.decl == "signed":
+            for (i, s) in seen_ids:
+                if i in self.adapter_pubs and s not in declared.get(i, {}):
+                    if s <= decl_frontier.get(i, -1) or finals.get(i):
+                        return "INVALID", absences, {"reason": f"undeclared committed chunk {i},{s}"}
+                    stale_decl = True
+                    undeclared_tail.setdefault(i, (s, s))
+        # custody: every committed position is opened when a store is available; receipts
+        # (signed by the store) decide only where an absence is attributed
+        unaudited = store is None
+        pending_custody = False
+        for t, N, T, rec_enc in decoded:
+            ids = ids_by_t[t]
+            depth = (N - 1).bit_length() if N > 1 else 0
             q_bm = receipts.get(t)
             ok_bits = set()
             if q_bm is not None:
                 q, bm = q_bm
-                if xmss_verify(self.store_pub, q, enc("rcpt", cfg.epoch, t, N) + T + bm):
+                # a receipt whose bitmap has the wrong length acknowledges nothing (never INVALID:
+                # a malformed receipt is the store's fault, not the history's)
+                if len(bm) == (N + 7) // 8 and xmss_verify(self.store_pub, q, enc("rcpt", cfg.epoch, t, N) + T + bm):
                     ok_bits = {p for p in range(N) if (bm[p // 8] >> (p % 8)) & 1}
             deadline_passed = now is None or now >= cfg.delta * (t + 1) + cfg.theta_st
             for pos in range(N):
                 i, s = ids[pos]
-                if pos not in ok_bits:
-                    if deadline_passed:
-                        absences.append((i, s, "HandoffAbsent"))
-                    continue
+                opened = False
                 if store is not None:
                     got = store.get(t, pos)
-                    if (got is None or got[0] != i or got[1] != s or
-                            root_from_path(H, leaf_value(H, cfg.epoch, t, i, s, got[2]), pos, got[3]) != T):
-                        absences.append((i, s, "CustodyLoss"))
-                    elif cfg.decl == "signed" and i in self.adapter_pubs:
+                    opened = (got is not None and got[0] == i and got[1] == s and len(got[3]) == depth and
+                              root_from_path(H, leaf_value(H, cfg.epoch, t, i, s, got[2]), pos, got[3]) == T)
+                    if opened and cfg.decl == "signed" and i in self.adapter_pubs:
                         d = declared.get(i, {}).get(s)
-                        if d is None:
-                            if s <= decl_frontier.get(i, -1):
-                                return "INVALID", absences, {"reason": f"undeclared committed chunk {i},{s}"}
-                        elif H(got[2]) != d:
+                        if d is not None and H(got[2]) != d:
                             return "INVALID", absences, {"reason": f"committed chunk {i},{s} differs from declaration"}
+                if pos in ok_bits:
+                    if store is not None and not opened:
+                        absences.append((i, s, "CustodyLoss"))
+                elif deadline_passed:
+                    absences.append((i, s, "HandoffAbsent"))
+                else:
+                    # receipt not yet due: whether custody was accepted is still open, so the
+                    # history cannot be COMPLETE or REPAIRED yet, even if the store produced it
+                    pending_custody = True
         info = {"repairs": sorted(repairs)}
+        if unaudited or pending_custody:
+            info["unaudited"] = True
+        if pending_tail:
+            info["pending"] = pending_tail          # excluded from scope until its checkpoint is due
         if undeclared_tail:
             info["undeclared_tail"] = undeclared_tail
+        # chunks past the last manifest in scope are unconfirmed; when the scope was cut short only
+        # by a checkpoint not yet due, their manifests lie in the pending tail, so this is a prefix
+        stale = stale or (stale_decl and pending_tail is None)
         if cfg.decl == "signed":
-            closed = all(finals.get(i) for i in self.adapter_pubs)
+            closed = all(finals.get(i) for i in self.adapter_pubs) and pending_tail is None
             info["scope"] = "epoch" if closed else "prefix"
             info["declared_through"] = dict(decl_frontier)
             if not closed and not absences and not stale:
@@ -599,6 +685,8 @@ class Verifier:
             return "ACCOUNTED", absences, info
         # REPAIRED: every recorded gap was closed by an authenticated late arrival, and the
         # closing window lies under a valid checkpoint (enforced above: no unsigned tail).
+        if pending_tail or unaudited or pending_custody:
+            return "PREFIX", absences, info          # complete only as far as audited
         return ("REPAIRED" if repairs else "COMPLETE"), absences, info
 
 def _decode_records(rec_enc):

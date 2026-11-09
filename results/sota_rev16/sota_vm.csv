@@ -1,0 +1,31 @@
+workload,system,trials,verdicts,false_complete,correct
+benign,LOGGER-MERKLE,20,"{""COMPLETE"": 20}",0,20
+benign,SYSLOG-SIGN,20,"{""COMPLETE"": 20}",0,20
+benign,SYSLOG-FRESH,20,"{""COMPLETE"": 20}",0,20
+benign,SDLS+CFDP,20,"{""COMPLETE"": 20}",0,20
+benign,DASLOG,20,"{""COMPLETE"": 20}",0,20
+benign,NEITH-ACE,20,"{""COMPLETE"": 20}",0,20
+link loss,LOGGER-MERKLE,20,"{""COMPLETE"": 20}",20,0
+link loss,SYSLOG-SIGN,20,"{""DETECTED"": 20}",0,20
+link loss,SYSLOG-FRESH,20,"{""DETECTED"": 20}",0,20
+link loss,SDLS+CFDP,20,"{""REPAIRED"": 20}",0,20
+link loss,DASLOG,20,"{""DETECTED"": 20}",0,20
+link loss,NEITH-ACE,20,"{""REPAIRED"": 20}",0,20
+store deletes,LOGGER-MERKLE,20,"{""DETECTED"": 20}",0,20
+store deletes,SYSLOG-SIGN,20,"{""DETECTED"": 20}",0,20
+store deletes,SYSLOG-FRESH,20,"{""DETECTED"": 20}",0,20
+store deletes,SDLS+CFDP,20,"{""N/A"": 20}",0,0
+store deletes,DASLOG,20,"{""DETECTED"": 20}",0,20
+store deletes,NEITH-ACE,20,"{""ACCOUNTED"": 20}",0,20
+service fabricates,LOGGER-MERKLE,20,"{""COMPLETE"": 20}",20,0
+service fabricates,SYSLOG-SIGN,20,"{""DETECTED"": 20}",0,20
+service fabricates,SYSLOG-FRESH,20,"{""DETECTED"": 20}",0,20
+service fabricates,SDLS+CFDP,20,"{""COMPLETE"": 20}",20,0
+service fabricates,DASLOG,20,"{""DETECTED"": 20}",0,20
+service fabricates,NEITH-ACE,20,"{""INVALID"": 20}",0,20
+service hides newest,LOGGER-MERKLE,20,"{""COMPLETE"": 20}",20,0
+service hides newest,SYSLOG-SIGN,20,"{""COMPLETE"": 20}",20,0
+service hides newest,SYSLOG-FRESH,20,"{""STALE"": 20}",0,20
+service hides newest,SDLS+CFDP,20,"{""COMPLETE"": 20}",20,0
+service hides newest,DASLOG,20,"{""DETECTED"": 20}",0,20
+service hides newest,NEITH-ACE,20,"{""STALE"": 18, ""PREFIX"": 2}",0,20

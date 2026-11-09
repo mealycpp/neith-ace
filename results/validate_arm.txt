@@ -1,0 +1,15 @@
+# validate.sh on the ClusterHAT controller (Raspberry Pi, aarch64), 2026-11-09
+# dir: ~/neith-ace/fprime/NeithAce/Components/CaptureAdapter, kit: ~/neith-ace/kit/v4
+== C shim ==
+MAC 4d9cb52f61bf43a7af5557592994cb091f2ea14ff03203d4d1eedc1215604b99
+DIG b74c208ab871fbdbd99c6623d5dee2340659aaece293147bb5ccb3701bedaee9
+GEN 3a0dcc9db328e43b6ca859246de35bcacbd7898116d797842e985acbed360198
+SIGNMSG 7582f600112de43cc58289c9fcd6820c8c765920fdaf33b1a75830c4f03ad7a8
+XMSS verify (0=ok): 0  siglen=2500
+== Python reference ==
+MAC 4d9cb52f61bf43a7af5557592994cb091f2ea14ff03203d4d1eedc1215604b99
+DIG b74c208ab871fbdbd99c6623d5dee2340659aaece293147bb5ccb3701bedaee9
+GEN 3a0dcc9db328e43b6ca859246de35bcacbd7898116d797842e985acbed360198
+SIGNMSG 7582f600112de43cc58289c9fcd6820c8c765920fdaf33b1a75830c4f03ad7a8
+== diff (MAC/DIG/GEN/SIGNMSG must match) ==
+PASS: shim is byte-compatible with the reference

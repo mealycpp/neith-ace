@@ -4,7 +4,7 @@
 
 # NEITH-ACE
 
-Reference implementation, attack injector, and benchmark scripts for **NEITH-ACE: Authenticated Completeness and Loss Attribution for Edge Telemetry**, the journal extension of NEITH (IEEE SATC 2026).
+Reference implementation, attack injector, benchmark scripts, and measurement logs for **NEITH-ACE: Authenticated Telemetry Completeness and Loss Attribution for Small-Spacecraft Flight Software** (Journal of Hardware and Systems Security, submitted November 2026), the journal extension of NEITH (IEEE SATC 2026). This release corresponds to manuscript revision rev16f.
 
 NEITH committed *what arrived*. NEITH-ACE commits *what should have arrived*, *what actually arrived*, and the last authenticated boundary each item crossed — and keeps that account verifiable **even when the integrity service is fully compromised**. Every number in the paper comes from these scripts running on real hardware. Hashing, MACs, XMSS signatures, `fsync`'d store persistence, and TCP transport are all real; only `attacks.py` simulates time so it can run thousands of missions, and its cryptography is real too.
 
@@ -25,8 +25,11 @@ The headline guarantee: a compromised integrity service — holding the admissio
 | File | Role |
 |---|---|
 | `neith_ace.py` | the construction: adapter, manifests, integrity service, store, verifier, Merkle tree, XMSS/Ascon wrappers |
-| `attacks.py` | 28 scenarios × N randomized missions; verdict **and exact absence set** must match ground truth |
-| `baselines.py` | five systems (NEITH / seq-log / ACE-MAC / ACE-no-repair / full ACE) over identical traces |
+| `attacks.py` | the 44 attack scenarios of Online Resource 1 × N randomized missions; verdict **and exact absence set** must match ground truth |
+| `sota.py` | models of five existing mechanisms (Merkle log, SDLS+CFDP, signed syslog with and without freshness, DASLog) and NEITH-ACE on identical missions (Table 2 of the paper) |
+| `tests/` | edge-case tests, e.g. a receipt not yet due keeps the verdict at Prefix |
+| `fprime/` | the F′ capture-adapter component, its crypto shim, and `validate.sh` (byte-compatibility check against the Python reference) |
+| `baselines.py` | earlier internal baselines (NEITH / sequence log / MAC-only / no-repair / full), kept for reference; the paper's comparison is `sota.py` |
 | `bench.py` | primitive costs: hashes, MACs, tree/record/root, XMSS h=10/16/20 (keygen, sign incl. fsync, verify, sizes) |
 | `live.py` | real-time pipeline over TCP: `adapter`, `serve` (integrity service), `store` (custodian + regulator) |
 | `make_tables.py` | emits the LaTeX tables from the result JSON/CSV |
@@ -49,7 +52,7 @@ nohup ./run_all.sh pi4 > pi4.out 2>&1 &
 
 **Three authority domains over the network** — capture adapters on the edge host, integrity service on a separate edge node, store + regulator on a separate machine:
 ```bash
-# storage + regulator (start first); --malicious 1 makes it a Byzantine custodian
+# storage + regulator (start first); --malicious 1 makes it a cheating store
 python3 live.py store --port 7701 --xmss XMSS-SHAKE256_10_256 --out results/net [--malicious 1]
 
 # integrity service; --drop injects link loss, --repair requests resends
@@ -61,9 +64,22 @@ python3 live.py adapter --connect <SERVICE_IP>:7700 --id 0 --source serial:/dev/
 python3 live.py adapter --connect <SERVICE_IP>:7700 --id 1 --source serialblock:/dev/ttyUSB0:8192 --out results/net &
 ```
 
-A representative live run (ClusterHAT Pi 4 adapters with real GNSS/LiDAR → Pi Zero service → separate ARM store+regulator, Byzantine custodian, 5 % link loss): **205 dropped chunks all repaired, 11 custodian-tampered chunks attributed exactly as CustodyLoss and no others, verdict Accounted**, root emission ≈0.5 s inside a 10 s window, zero false completeness.
+A representative live run (ClusterHAT Pi 4 adapters with real GNSS/LiDAR → Pi Zero service → separate ARM store+regulator, cheating store, 5 % link loss): **205 dropped chunks all repaired, 11 custodian-tampered chunks attributed exactly as CustodyLoss and no others, verdict Accounted**, root emission ≈0.5 s inside a 10 s window, zero false completeness.
 
 `--decl mac` on `serve` and `adapter` runs the MAC-only baseline, which a compromised service *can* fool — the counterexample the signed manifests close.
+
+## Results in this release
+
+| Path | Paper |
+|---|---|
+| `results/attacks_rev16_signed/`, `results/attacks_rev16_mac/` | attack table of Online Resource 1 (44 scenarios × 8 trials, signed and MAC-only declarations) |
+| `results/sota_rev16/` | Table 2 (comparison with existing mechanisms, 20 missions per cell) |
+| `results/live/` | Fig. 3(a), the squares of Fig. 3(b), and the repair and custody results (per-window log and run summary of the live run) |
+| `results/bench_clusterhat.json` | Pi 4 microbenchmarks behind the circles of Fig. 3(b) |
+| `results/fprime/` | F′ adapter run log (manifest timing and sealing cost) |
+| `results/validate_arm.txt`, `results/validate_x86.txt` | F′ shim byte-compatibility on the Pi 4 and on x86 |
+
+Rerun the attack table with `python3 attacks.py --trials 8 --out results/x` and `python3 attacks.py --trials 8 --decl mac --out results/x`, and the comparison with `python3 sota.py --out results/x`; both use the fixed seed 2026.
 
 ## Citation
 

@@ -1,5 +1,13 @@
 build/
-results/
+results/*
+!results/attacks_rev16_signed/
+!results/attacks_rev16_mac/
+!results/sota_rev16/
+!results/live/
+!results/fprime/
+!results/bench_clusterhat.json
+!results/validate_arm.txt
+!results/validate_x86.txt
 __pycache__/
 *.pyc
 *.so

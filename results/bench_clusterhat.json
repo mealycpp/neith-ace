@@ -1,0 +1,319 @@
+{
+ "host": "clusterhat",
+ "machine": "aarch64",
+ "python": "3.11.2",
+ "cpu_count": 4,
+ "uname": "Linux clusterhat 6.12.47+rpt-rpi-v8 #1 SMP PREEMPT Debian 1:6.12.47-1+rpt1~bookworm (2025-09-16) aarch64",
+ "hash": {
+  "ascon-xof128-c-opt64@8192": {
+   "median_us": 97.72,
+   "p95_us": 121.26,
+   "min_us": 97.42,
+   "reps": 300,
+   "MBps": 83.831
+  },
+  "ascon-xof128-c-ref@8192": {
+   "median_us": 110.26,
+   "p95_us": 118.37,
+   "min_us": 109.91,
+   "reps": 300,
+   "MBps": 74.297
+  },
+  "ascon-xof128-python@8192": {
+   "median_us": 169839.3,
+   "p95_us": 170822.53,
+   "min_us": 168605.62,
+   "reps": 5,
+   "MBps": 0.048
+  },
+  "blake3@8192": {
+   "median_us": 41.13,
+   "p95_us": 41.82,
+   "min_us": 40.87,
+   "reps": 300,
+   "MBps": 199.173
+  },
+  "cshake128@8192": {
+   "median_us": 89.85,
+   "p95_us": 97.28,
+   "min_us": 88.96,
+   "reps": 300,
+   "MBps": 91.174
+  },
+  "k12@8192": {
+   "median_us": 168.81,
+   "p95_us": 199.13,
+   "min_us": 164.63,
+   "reps": 300,
+   "MBps": 48.528
+  },
+  "sha3-256@8192": {
+   "median_us": 57.02,
+   "p95_us": 57.78,
+   "min_us": 56.83,
+   "reps": 300,
+   "MBps": 143.669
+  },
+  "shake128@8192": {
+   "median_us": 47.72,
+   "p95_us": 48.28,
+   "min_us": 47.46,
+   "reps": 300,
+   "MBps": 171.668
+  }
+ },
+ "mac": {
+  "ascon-cxof128-keyed@8192": {
+   "median_us": 113.41,
+   "p95_us": 115.35,
+   "min_us": 113.07,
+   "reps": 300
+  },
+  "hmac-sha256@8192": {
+   "median_us": 62.07,
+   "p95_us": 64.78,
+   "min_us": 61.52,
+   "reps": 300
+  },
+  "kmac128@8192": {
+   "median_us": 114.3,
+   "p95_us": 126.02,
+   "min_us": 112.93,
+   "reps": 300
+  }
+ },
+ "xmss": {
+  "XMSS-SHAKE256_10_256": {
+   "keygen_s": 4.321,
+   "sig_bytes": 2500,
+   "pk_bytes": 68,
+   "sk_bytes": 1377,
+   "sign_ms_median": 30.189,
+   "sign_ms_p95": 37.307,
+   "sign_ms_max": 41.115,
+   "verify_ms_median": 2.311,
+   "sign_reps": 200
+  },
+  "XMSS-SHAKE256_16_256": {
+   "keygen_s": 274.024,
+   "sig_bytes": 2692,
+   "pk_bytes": 68,
+   "sk_bytes": 2097,
+   "sign_ms_median": 17.602,
+   "sign_ms_p95": 49.308,
+   "sign_ms_max": 57.18,
+   "verify_ms_median": 2.598,
+   "sign_reps": 200
+  }
+ },
+ "parallel": {
+  "shake128@8192@P1": 161.158,
+  "shake128@8192@P2": 296.02,
+  "shake128@8192@P4": 367.116,
+  "sha3-256@8192@P1": 101.205,
+  "sha3-256@8192@P2": 264.352,
+  "sha3-256@8192@P4": 326.475,
+  "blake3@8192@P1": 180.34,
+  "blake3@8192@P2": 367.445,
+  "blake3@8192@P4": 564.146,
+  "k12@8192@P1": 45.67,
+  "k12@8192@P2": 86.659,
+  "k12@8192@P4": 128.491,
+  "cshake128@8192@P1": 75.448,
+  "cshake128@8192@P2": 149.19,
+  "cshake128@8192@P4": 247.526,
+  "ascon-xof128-c-opt64@8192@P1": 79.155,
+  "ascon-xof128-c-opt64@8192@P2": 159.849,
+  "ascon-xof128-c-opt64@8192@P4": 288.728,
+  "ascon-xof128-c-ref@8192@P1": 71.111,
+  "ascon-xof128-c-ref@8192@P2": 142.644,
+  "ascon-xof128-c-ref@8192@P4": 183.384
+ },
+ "structure": {
+  "ascon-xof128-c-opt64": {
+   "node": {
+    "median_us": 4.83,
+    "p95_us": 5.18,
+    "min_us": 4.7,
+    "reps": 300
+   },
+   "record_m2": {
+    "median_us": 510.44,
+    "p95_us": 617.29,
+    "min_us": 497.05,
+    "reps": 300
+   },
+   "root": {
+    "median_us": 10.2,
+    "p95_us": 10.52,
+    "min_us": 9.98,
+    "reps": 300
+   },
+   "tree_N70": {
+    "median_us": 349.52,
+    "p95_us": 360.57,
+    "min_us": 347.09,
+    "reps": 30
+   }
+  },
+  "ascon-xof128-c-ref": {
+   "node": {
+    "median_us": 4.98,
+    "p95_us": 5.28,
+    "min_us": 4.85,
+    "reps": 300
+   },
+   "record_m2": {
+    "median_us": 509.37,
+    "p95_us": 536.7,
+    "min_us": 501.72,
+    "reps": 300
+   },
+   "root": {
+    "median_us": 10.39,
+    "p95_us": 10.67,
+    "min_us": 10.13,
+    "reps": 300
+   },
+   "tree_N70": {
+    "median_us": 364.53,
+    "p95_us": 376.03,
+    "min_us": 360.68,
+    "reps": 30
+   }
+  },
+  "blake3": {
+   "node": {
+    "median_us": 4.13,
+    "p95_us": 4.43,
+    "min_us": 4.0,
+    "reps": 300
+   },
+   "record_m2": {
+    "median_us": 480.3,
+    "p95_us": 511.2,
+    "min_us": 473.12,
+    "reps": 300
+   },
+   "root": {
+    "median_us": 9.48,
+    "p95_us": 9.7,
+    "min_us": 9.22,
+    "reps": 300
+   },
+   "tree_N70": {
+    "median_us": 303.87,
+    "p95_us": 308.29,
+    "min_us": 300.98,
+    "reps": 30
+   }
+  },
+  "cshake128": {
+   "node": {
+    "median_us": 44.15,
+    "p95_us": 45.67,
+    "min_us": 43.17,
+    "reps": 300
+   },
+   "record_m2": {
+    "median_us": 536.63,
+    "p95_us": 560.61,
+    "min_us": 523.85,
+    "reps": 300
+   },
+   "root": {
+    "median_us": 49.39,
+    "p95_us": 50.61,
+    "min_us": 48.22,
+    "reps": 300
+   },
+   "tree_N70": {
+    "median_us": 3262.08,
+    "p95_us": 3334.84,
+    "min_us": 3223.93,
+    "reps": 30
+   }
+  },
+  "k12": {
+   "node": {
+    "median_us": 35.86,
+    "p95_us": 37.2,
+    "min_us": 34.94,
+    "reps": 300
+   },
+   "record_m2": {
+    "median_us": 522.77,
+    "p95_us": 641.61,
+    "min_us": 508.92,
+    "reps": 300
+   },
+   "root": {
+    "median_us": 41.68,
+    "p95_us": 42.55,
+    "min_us": 40.63,
+    "reps": 300
+   },
+   "tree_N70": {
+    "median_us": 2646.97,
+    "p95_us": 2697.81,
+    "min_us": 2620.7,
+    "reps": 30
+   }
+  },
+  "sha3-256": {
+   "node": {
+    "median_us": 3.82,
+    "p95_us": 3.98,
+    "min_us": 3.67,
+    "reps": 300
+   },
+   "record_m2": {
+    "median_us": 488.12,
+    "p95_us": 530.18,
+    "min_us": 476.85,
+    "reps": 300
+   },
+   "root": {
+    "median_us": 8.46,
+    "p95_us": 8.72,
+    "min_us": 8.22,
+    "reps": 300
+   },
+   "tree_N70": {
+    "median_us": 282.59,
+    "p95_us": 287.44,
+    "min_us": 280.79,
+    "reps": 30
+   }
+  },
+  "shake128": {
+   "node": {
+    "median_us": 4.2,
+    "p95_us": 4.41,
+    "min_us": 4.07,
+    "reps": 300
+   },
+   "record_m2": {
+    "median_us": 489.93,
+    "p95_us": 528.46,
+    "min_us": 476.81,
+    "reps": 300
+   },
+   "root": {
+    "median_us": 9.22,
+    "p95_us": 9.7,
+    "min_us": 8.89,
+    "reps": 300
+   },
+   "tree_N70": {
+    "median_us": 310.95,
+    "p95_us": 361.27,
+    "min_us": 308.29,
+    "reps": 30
+   }
+  }
+ },
+ "cpu_model": [
+  "Raspberry Pi 4 Model B Rev 1.5"
+ ]
+}

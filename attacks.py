@@ -49,14 +49,14 @@ def schedule(rng, W, cfg, L):
     return ev
 
 def mission(rng, cfg, H, mac, keys, W, L, link=None, publish=None, custody=None, handoff=None,
-            repair=None, compromise=None):
+            repair=None, compromise=None, audit_at=None):
     """repair: None (no resend path) or a function (rng, requests, attempt, truth) -> requests
     that the adversarial link lets through to the adapters (identity = honest link)."""
     is_key, st_key = keys.get(need=W + 2 + int(W * cfg.delta / cfg.delta_m) + 3)
     adapter_keys = {i: rng.randbytes(16) for i in SENSORS}
     ad = {i: na.Adapter(cfg, i, adapter_keys[i], mac, H=H, signer=keys.ad_keys[i]) for i in SENSORS}
     ad_pubs = {i: keys.ad_keys[i].public() for i in SENSORS} if cfg.decl == "signed" else {}
-    svc = na.IntegrityService(cfg, adapter_keys, is_key, H, mac, adapter_pubs=ad_pubs)
+    svc = na.IntegrityService(cfg, adapter_keys, is_key, H, mac, adapter_pubs=ad_pubs, store_pub=st_key.public())
     if compromise:
         compromise(rng, svc, truth_ref := {})
     store = na.Store(cfg, H, st_key)
@@ -115,8 +115,13 @@ def mission(rng, cfg, H, mac, keys, W, L, link=None, publish=None, custody=None,
         custody(rng, store, svc, truth)
     v = na.Verifier(cfg, H, is_key.public(), st_key.public(), svc.genesis, adapter_pubs=ad_pubs)
     t0 = time.perf_counter()
-    verdict, absences, info = v.verify(published, svc.receipt_archive, store=store,
-                                       now=cfg.delta * (W + 1) + cfg.gamma + cfg.theta + 1e-6)
+    now = audit_at if audit_at is not None else cfg.delta * (W + 1) + cfg.gamma + cfg.theta + 1e-6
+    # the verifier reads receipts from the store's side: every receipt the store issued, including
+    # those still in flight to the service when the mission ended (withheld ones were never issued)
+    receipts = dict(svc.receipt_archive)
+    for _, (t_r, q_r, bm_r) in receipts_in_flight:
+        receipts.setdefault(t_r, (q_r, bm_r))
+    verdict, absences, info = v.verify(published, receipts, store=store, now=now)
     vt = time.perf_counter() - t0
     return dict(verdict=verdict, absences=sorted(absences), info=info, verify_s=vt,
                 roots=[p[2] for p in svc.published], svc=svc, store=store, truth=truth,
@@ -434,7 +439,7 @@ def sc_cis_omit(cfg, W):
     def expect(r, tr):
         if cfg.decl == "mac":
             return ("INVALID", None)   # erasing interior gaps breaks the tiling
-        return (None, None)      # anything but COMPLETE: WITHHELD (chain) or STALE (uncovered tail)
+        return ("WITHHELD", None)    # the manifest chain breaks
     return kw, expect
 
 def sc_cis_hide_newest(cfg, W):
@@ -457,8 +462,8 @@ def sc_cis_hide_newest(cfg, W):
         def pre_tree(t, recv, T_close):
             return {} if t >= W - 2 else recv
         svc.tamper = tamper; svc.pre_tree = pre_tree
-    def expect(r, tr):   # signed: STALE (no fresh declaration) or PREFIX (no FINAL); never COMPLETE
-        return ("COMPLETE", None) if cfg.decl == "mac" else (None, None)
+    def expect(r, tr):   # signed: STALE (newest windows carry no fresh declaration)
+        return ("COMPLETE", None) if cfg.decl == "mac" else ("STALE", None)
     return {"compromise": compromise}, expect
 
 def sc_dup_inflate(cfg, W):
@@ -476,6 +481,142 @@ def sc_receipt_wrong_window(cfg, W):
         ts = sorted(t for t in svc.receipt_archive if 1 <= t < W - 1)
         a_, b_ = rng.sample(ts, 2)
         svc.receipt_archive[a_] = svc.receipt_archive[b_]
+    return {"custody": custody}, lambda r, tr: ("ACCOUNTED", None)
+
+
+def sc_cis_fake_gap_fabricate(cfg, W):
+    """Compromised service records a 'missing' number far outside the window's interval and
+    later commits a fabricated leaf for it as a 'late arrival' (review PoC)."""
+    X = 2000
+    def compromise(rng, svc, tr):
+        def pre_tree(t, recv, T):
+            if t == W: recv[(0, X)] = b"FABRICATED PAYLOAD"
+            return recv
+        def tamper(t, recs):
+            out = []
+            for r in recs:
+                r = list(r)
+                if r[0] == 0 and t == 0: r[3] = list(r[3]) + [X]
+                if r[0] == 0 and t == W: r[5] = list(r[5]) + [X]
+                out.append(tuple(r))
+            return out
+        svc.pre_tree, svc.tamper = pre_tree, tamper
+    return {"compromise": compromise}, lambda r, tr: ("INVALID", None)
+
+def sc_cis_fake_gap_duplicate(cfg, W):
+    """Compromised service re-lists an already committed number as missing, then commits it
+    again as a late arrival with other content (review PoC)."""
+    def compromise(rng, svc, tr):
+        def pre_tree(t, recv, T):
+            if t == W: recv[(0, 5)] = b"DUPLICATE PAYLOAD"
+            return recv
+        def tamper(t, recs):
+            out = []
+            for r in recs:
+                r = list(r)
+                if r[0] == 0 and t == 1: r[3] = list(r[3]) + [5]
+                if r[0] == 0 and t == W: r[5] = list(r[5]) + [5]
+                out.append(tuple(r))
+            return out
+        svc.pre_tree, svc.tamper = pre_tree, tamper
+    return {"compromise": compromise}, lambda r, tr: ("INVALID", None)
+
+def sc_cis_forge_unreceipted(cfg, W):
+    """The link drops the last chunk of sensor 0; it is resent in window W, whose receipt is not
+    yet due at audit time. A compromised service forges the resent payload and withholds the
+    receipt; the verifier must open the position anyway (review PoC)."""
+    def link(rng, msgs, truth):
+        idx = [k for k, (tau, m) in enumerate(msgs) if m[0] == "C" and m[1] == 0 and tau < W * cfg.delta - 1]
+        return [x for k, x in enumerate(msgs) if k != idx[-1]]
+    def compromise(rng, svc, tr):
+        def pre(t, recv, T):
+            if t == W:
+                for key in recv: recv[key] = b"FORGED" + recv[key][6:]
+            return recv
+        svc.pre_tree = pre
+    def expect(r, tr):
+        return (None, None) if cfg.decl == "mac" else ("INVALID", None)
+    return {"link": link, "repair": (lambda r, q, a, t: q), "compromise": compromise,
+            "custody": {"withhold": {W}}}, expect
+
+def sc_genesis_substitution(cfg, W):
+    """Compromised service starts the chain from a genesis with adapter keys of its own."""
+    def compromise(rng, svc, tr):
+        g = svc.H(b"\x06" + b"service-chosen genesis")
+        svc.prev = g; svc.genesis = g
+    return {"compromise": compromise}, lambda r, tr: ("INVALID", None)
+
+def sc_late_audit(cfg, W):
+    """Honest history audited long after the epoch: must not be reported as withheld."""
+    return {"audit_at": 1e7}, lambda r, tr: ("COMPLETE", [])
+
+def _drop_one_manifest(cfg, W):
+    def link(rng, msgs, tr):
+        ks = [k for k, (tau, m) in enumerate(msgs) if m[0] == "M" and not m[5] and cfg.delta <= tau < cfg.delta * (W - 2)]
+        k = rng.choice(ks); tr["target"] = (msgs[k][1][1], msgs[k][1][2])
+        return [x for j, x in enumerate(msgs) if j != k]
+    return link
+
+def sc_manifest_drop_repair(cfg, W):
+    """A manifest is lost on the link; the service re-requests it, holds the later ones until it
+    arrives, and the honest history verifies."""
+    if cfg.decl != "signed":
+        return {}, lambda r, tr: ("COMPLETE", [])
+    return {"link": _drop_one_manifest(cfg, W), "repair": _honest_repair}, lambda r, tr: ("COMPLETE", [])
+
+def sc_manifest_drop_suppressed(cfg, W):
+    """A manifest is lost and every request is suppressed: later manifests stay held, the
+    declaration frontier stops, and the chunks beyond it are not source-confirmed."""
+    if cfg.decl != "signed":
+        return {}, lambda r, tr: ("COMPLETE", [])
+    return ({"link": _drop_one_manifest(cfg, W), "repair": lambda rng, reqs, attempt, tr: []},
+            lambda r, tr: ("STALE", None))
+
+def sc_late_audit_aligned(cfg, W):
+    """Shutdown checkpoint falls on a scheduled checkpoint window (11 windows, k = 6); audited
+    long after the epoch, the history must not be reported as withheld."""
+    return {"W": 2 * cfg.k - 1, "audit_at": 1e7}, lambda r, tr: ("COMPLETE", [])
+
+def sc_checkpoint_pending(cfg, W):
+    """Audit before the last scheduled checkpoint is due, with that checkpoint not yet published:
+    the history is complete only as far as it goes."""
+    Wa = 2 * cfg.k - 1
+    def publish(rng, published, svc, is_key, H, cfg_, tr):
+        out = list(published); h, rec, R, cp = out[-1]; out[-1] = (h, rec, R, None); return out
+    return ({"W": Wa, "publish": publish, "audit_at": cfg.delta * (Wa + 1) + cfg.gamma + cfg.theta - 0.5},
+            lambda r, tr: ("PREFIX", []))
+
+def sc_aligned_ontime(cfg, W):
+    """Shutdown on a scheduled checkpoint window, audited just after its deadline."""
+    return {"W": 2 * cfg.k - 1}, lambda r, tr: ("COMPLETE", [])
+
+def sc_aligned_end_withheld(cfg, W):
+    """Shutdown on a scheduled checkpoint window; the shutdown checkpoint is withheld past its
+    deadline."""
+    def publish(rng, published, svc, is_key, H, cfg_, tr):
+        out = list(published); h, rec, R, cp = out[-1]; out[-1] = (h, rec, R, None); return out
+    return {"W": 2 * cfg.k - 1, "publish": publish}, lambda r, tr: ("WITHHELD", None)
+
+def sc_cis_early_end(cfg, W):
+    """Compromised service signs an end checkpoint in mid-history and keeps publishing, to stop
+    the verifier's schedule early."""
+    def publish(rng, published, svc, is_key, H, cfg_, tr):
+        out = list(published); j = cfg_.k - 1
+        (t, N, T, D), rec, R, cp = out[j]
+        out[j] = ((t, N, T, D), rec, R, is_key.sign(H(b"\x07" + na.enc(cfg_.epoch, t, True) + R)))
+        return out
+    return {"publish": publish}, lambda r, tr: ("INVALID", None)
+
+def sc_receipt_short_bitmap(cfg, W):
+    """Store signs a receipt whose bitmap is shorter than ceil(N/8) bytes: the receipt
+    acknowledges nothing, so that window's positions are attributed to the handoff; the
+    history itself is not invalid."""
+    def custody(rng, store, svc, tr):
+        cand = [p for p in svc.published if 1 <= p[0][0] < W - 1 and p[0][1] > 8]
+        (t, N, T, D) = rng.choice(cand)[0]
+        bm = b"\xff" * ((N + 7) // 8 - 1)
+        q = store.signer.sign(na.enc("rcpt", cfg.epoch, t, N) + T + bm)
+        svc.receipt_archive[t] = (q, bm)
     return {"custody": custody}, lambda r, tr: ("ACCOUNTED", None)
 
 SCENARIOS = [
@@ -510,6 +651,19 @@ SCENARIOS = [
     ("compromised-IS: hide newest blocks", "service", sc_cis_hide_newest),
     ("duplicate-inflation", "link", sc_dup_inflate),
     ("receipt-bound-to-wrong-window", "custody", sc_receipt_wrong_window),
+    ("compromised-IS: fake gap then fabricated late leaf", "service", sc_cis_fake_gap_fabricate),
+    ("compromised-IS: fake gap then duplicate leaf", "service", sc_cis_fake_gap_duplicate),
+    ("compromised-IS: forge unreceipted last window", "service", sc_cis_forge_unreceipted),
+    ("compromised-IS: substitute genesis", "service", sc_genesis_substitution),
+    ("honest history, late audit", "none", sc_late_audit),
+    ("honest history, late audit, shutdown on a scheduled checkpoint", "none", sc_late_audit_aligned),
+    ("checkpoint not yet due at audit", "publication", sc_checkpoint_pending),
+    ("drop-manifest+repair", "link", sc_manifest_drop_repair),
+    ("drop-manifest+requests-suppressed", "link", sc_manifest_drop_suppressed),
+    ("honest history, shutdown on a scheduled checkpoint, on-time audit", "none", sc_aligned_ontime),
+    ("shutdown checkpoint on a scheduled window withheld", "publication", sc_aligned_end_withheld),
+    ("compromised-IS: end checkpoint in mid-history", "service", sc_cis_early_end),
+    ("receipt with a short bitmap", "custody", sc_receipt_short_bitmap),
 ]
 
 def main():
@@ -537,7 +691,8 @@ def main():
         for trial in range(a.trials):
             rng = random.Random(f"{a.seed}-{name}-{trial}")
             kw, expect = build(cfg, a.windows)
-            res = mission(rng, cfg, H, mac, keys, a.windows, a.leaf, **kw)
+            Wm = kw.pop("W", a.windows)
+            res = mission(rng, cfg, H, mac, keys, Wm, a.leaf, **kw)
             ev, eabs = expect(rng, res["truth"])
             if ev is None:
                 ok = res["verdict"] != "COMPLETE"

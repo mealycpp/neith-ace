@@ -1,0 +1,27 @@
+1794135426.171638278 NEITH-ACE setReplay sensor=0 path=/home/hadedy/neith-ace/replay/gps.log open=1
+1794135426.177616282 NEITH-ACE setReplay sensor=1 path=/home/hadedy/neith-ace/replay/lidar.bin open=1
+1794135427.177236175 NEITH-ACE schedIn first tick sensor=0 epochOpen=1 replay=1
+1794135427.180107966 NEITH-ACE schedIn first tick sensor=1 epochOpen=1 replay=1
+1794135436.271746212 NEITH-ACE sensor=1 epoch=1 v=1 s_hat=19 items=20 final=0 sign_us=93393 highwater=20
+1794135436.274630076 NEITH-ACE sensor=0 epoch=1 v=1 s_hat=79 items=80 final=0 sign_us=95089 highwater=80
+1794135446.230532604 NEITH-ACE sensor=1 epoch=1 v=2 s_hat=39 items=20 final=0 sign_us=53131 highwater=40
+1794135446.234182203 NEITH-ACE sensor=0 epoch=1 v=2 s_hat=159 items=80 final=0 sign_us=55346 highwater=160
+1794135456.228640959 NEITH-ACE sensor=1 epoch=1 v=3 s_hat=59 items=20 final=0 sign_us=51375 highwater=60
+1794135456.231812877 NEITH-ACE sensor=0 epoch=1 v=3 s_hat=239 items=80 final=0 sign_us=53238 highwater=240
+1794135466.286634954 NEITH-ACE sensor=0 epoch=1 v=4 s_hat=319 items=80 final=0 sign_us=107537 highwater=320
+1794135466.291445617 NEITH-ACE sensor=1 epoch=1 v=4 s_hat=79 items=20 final=0 sign_us=110904 highwater=80
+1794135476.228856265 NEITH-ACE sensor=1 epoch=1 v=5 s_hat=99 items=20 final=0 sign_us=51288 highwater=100
+1794135476.231858906 NEITH-ACE sensor=0 epoch=1 v=5 s_hat=399 items=80 final=0 sign_us=53289 highwater=400
+1794135486.230331443 NEITH-ACE sensor=1 epoch=1 v=6 s_hat=119 items=20 final=0 sign_us=52928 highwater=120
+1794135486.233730285 NEITH-ACE sensor=0 epoch=1 v=6 s_hat=479 items=80 final=0 sign_us=54764 highwater=480
+1794135496.229856730 NEITH-ACE sensor=1 epoch=1 v=7 s_hat=139 items=20 final=0 sign_us=52572 highwater=140
+1794135496.232764835 NEITH-ACE sensor=0 epoch=1 v=7 s_hat=559 items=80 final=0 sign_us=54578 highwater=560
+1794135506.395068242 NEITH-ACE sensor=0 epoch=1 v=8 s_hat=639 items=80 final=0 sign_us=216623 highwater=640
+1794135506.398188031 NEITH-ACE sensor=1 epoch=1 v=8 s_hat=159 items=20 final=0 sign_us=220115 highwater=160
+1794135509.283016565 NEITH-ACE sensor=0 epoch=1 v=9 s_hat=655 items=16 final=1 sign_us=106115 highwater=656
+1794135516.281610080 NEITH-ACE sensor=1 epoch=1 v=9 s_hat=179 items=20 final=0 sign_us=104129 highwater=180
+1794135526.254701648 NEITH-ACE sensor=1 epoch=1 v=10 s_hat=199 items=20 final=0 sign_us=76665 highwater=200
+1794135536.226180154 NEITH-ACE sensor=1 epoch=1 v=11 s_hat=219 items=20 final=0 sign_us=48327 highwater=220
+1794135546.325408522 NEITH-ACE sensor=1 epoch=1 v=12 s_hat=239 items=20 final=0 sign_us=147211 highwater=240
+1794135556.228274703 NEITH-ACE sensor=1 epoch=1 v=13 s_hat=259 items=20 final=0 sign_us=51039 highwater=260
+1794135566.225953099 NEITH-ACE sensor=1 epoch=1 v=14 s_hat=279 items=20 final=0 sign_us=47997 highwater=280

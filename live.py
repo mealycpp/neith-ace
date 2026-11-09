@@ -147,6 +147,9 @@ def store_server(a):
             pub = [((h[0], h[1], h[2], h[3]), rec, R, cp) for (h, rec, R, cp) in published]
             rc = {t: (q, bm) for (t, q, bm) in receipts}
             ad_pubs = {i: (prm, bytes(pk)) for (i, prm, pk) in apk}
+            # NOTE: in this live harness the verifier receives cfg and keys with the evidence.
+            # That is sound only for an honest service (as in the published live run); a
+            # deployment must provision cfg, pk, adapter keys, and pk_st out of band (Theorem 4).
             v = na.Verifier(cfg, H, (is_param, is_pk), key.public(), genesis, adapter_pubs=ad_pubs)
             t0 = time.perf_counter()
             verdict, absences, info = v.verify(pub, rc, store=store)
@@ -279,7 +282,8 @@ def serve(a):
         if cfg.decl == "signed" and len(adapter_pubs) < a.sensors:
             print(f"[serve] WARNING: {len(adapter_pubs)}/{a.sensors} adapters announced keys", flush=True)
         svc = na.IntegrityService(cfg, keys, is_key, H, mac,
-                                  adapter_pubs=adapter_pubs if cfg.decl == "signed" else {})
+                                  adapter_pubs=adapter_pubs if cfg.decl == "signed" else {},
+                                  store_pub=st_pub)
         tau0[0] = time.time()
     go.set()
     rows, rcpt_lat = [], {}

@@ -1,0 +1,45 @@
+scenario,position,trials,passed,verdicts,verify_ms_median,verify_ms_p95
+benign,none,8,8,"{""COMPLETE"": 8}",89.48,94.15
+retransmit,none,8,8,"{""COMPLETE"": 8}",89.89,122.46
+drop-chunk,link,8,8,"{""ACCOUNTED"": 8}",92.84,104.51
+drop-burst,link,8,8,"{""ACCOUNTED"": 8}",88.47,107.6
+silence-chunks+heartbeats,link,8,8,"{""STALE"": 8}",74.03,83.42
+modify-payload,link,8,8,"{""ACCOUNTED"": 8}",89.85,130.2
+inject-forged-chunks+heartbeats,link,8,8,"{""COMPLETE"": 8}",87.5,90.55
+replay-old-chunks,link,8,8,"{""COMPLETE"": 8}",89.37,104.5
+reorder-within-window,link,8,8,"{""COMPLETE"": 8}",85.78,90.7
+delay-across-window,link,8,8,"{""REPAIRED"": 8}",89.06,97.67
+delete-window,publication,8,8,"{""INVALID"": 8}",0.7,1.37
+insert-window,publication,8,8,"{""INVALID"": 8}",1.2,1.28
+swap-windows,publication,8,8,"{""INVALID"": 8}",0.61,1.3
+truncate-tail,publication,8,8,"{""WITHHELD"": 8}",0.68,1.26
+substitute-record+recompute-chain,publication,8,8,"{""INVALID"": 8}",3.48,3.68
+forge-checkpoint,publication,8,8,"{""INVALID"": 8}",4.3,6.28
+withhold-receipt,custody,8,8,"{""ACCOUNTED"": 8}",88.33,107.65
+tamper-handoff,custody,8,8,"{""ACCOUNTED"": 8}",87.33,88.77
+delete-stored-chunk,custody,8,8,"{""ACCOUNTED"": 8}",91.91,98.64
+substitute-stored-chunk,custody,8,8,"{""ACCOUNTED"": 8}",88.38,92.96
+drop-burst+repair,link,8,8,"{""REPAIRED"": 8}",88.49,92.39
+modify-payload+repair,link,8,8,"{""REPAIRED"": 8}",89.0,116.44
+drop-burst+repair-after-retry,link,8,8,"{""REPAIRED"": 8}",86.87,89.57
+drop-burst+requests-suppressed,link,8,8,"{""ACCOUNTED"": 8}",90.59,103.51
+forged-resend-requests,link,8,8,"{""COMPLETE"": 8}",86.59,87.13
+compromised-IS: erase gaps + re-sign,service,8,8,"{""ACCOUNTED"": 8}",85.71,92.79
+compromised-IS: fabricate chunks,service,8,8,"{""INVALID"": 8}",58.87,73.45
+compromised-IS: omit manifests,service,8,8,"{""WITHHELD"": 8}",20.37,23.9
+compromised-IS: hide newest blocks,service,8,8,"{""STALE"": 8}",71.91,72.35
+duplicate-inflation,link,8,8,"{""COMPLETE"": 8}",86.33,89.59
+receipt-bound-to-wrong-window,custody,8,8,"{""ACCOUNTED"": 8}",88.4,94.43
+compromised-IS: fake gap then fabricated late leaf,service,8,8,"{""INVALID"": 8}",4.62,4.93
+compromised-IS: fake gap then duplicate leaf,service,8,8,"{""INVALID"": 8}",4.73,5.57
+compromised-IS: forge unreceipted last window,service,8,8,"{""INVALID"": 8}",91.65,98.92
+compromised-IS: substitute genesis,service,8,8,"{""INVALID"": 8}",0.05,0.06
+"honest history, late audit",none,8,8,"{""COMPLETE"": 8}",86.58,99.01
+"honest history, late audit, shutdown on a scheduled checkpoint",none,8,8,"{""COMPLETE"": 8}",85.28,92.39
+checkpoint not yet due at audit,publication,8,8,"{""PREFIX"": 8}",41.48,44.68
+drop-manifest+repair,link,8,8,"{""COMPLETE"": 8}",89.68,113.19
+drop-manifest+requests-suppressed,link,8,8,"{""STALE"": 8}",78.72,86.27
+"honest history, shutdown on a scheduled checkpoint, on-time audit",none,8,8,"{""COMPLETE"": 8}",80.79,94.9
+shutdown checkpoint on a scheduled window withheld,publication,8,8,"{""WITHHELD"": 8}",1.36,1.61
+compromised-IS: end checkpoint in mid-history,service,8,8,"{""INVALID"": 8}",2.23,2.34
+receipt with a short bitmap,custody,8,8,"{""ACCOUNTED"": 8}",92.32,97.06
