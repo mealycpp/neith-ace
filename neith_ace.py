@@ -685,7 +685,9 @@ class Verifier:
             return "ACCOUNTED", absences, info
         # REPAIRED: every recorded gap was closed by an authenticated late arrival, and the
         # closing window lies under a valid checkpoint (enforced above: no unsigned tail).
-        if pending_tail or unaudited or pending_custody:
+        if pending_custody:                          # Algorithm S1: if pend then Prefix
+            return "PREFIX", absences, info          # a receipt not yet due: never COMPLETE/REPAIRED early
+        if pending_tail or unaudited:
             return "PREFIX", absences, info          # complete only as far as audited
         return ("REPAIRED" if repairs else "COMPLETE"), absences, info
 
