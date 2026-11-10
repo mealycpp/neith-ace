@@ -8,7 +8,8 @@ Sources for `adapter --source`:
   serial:/dev/ttyACM0        one chunk per line (NMEA etc.); configure the port with stty first
   serialblock:/dev/ttyUSB0:N one chunk per N raw bytes (binary LiDAR streams)
   stdin                      one chunk per line from a pipe:  my_reader | live.py adapter --source stdin
-  synth:RATE_HZ:BYTES        synthetic producer
+  synth:RATE_HZ:BYTES        synthetic producer (bursty, mean rate RATE_HZ)
+  paced:RATE_HZ:BYTES        synthetic producer at a constant rate (capacity measurement)
 
 Adapter key K_i = SHAKE256(secret || "adapter" || i)[:16]; pass the same --secret to every process.
 Measured per window: E_t - T_t (root emission latency), service compute time, N_t, gaps,
@@ -385,6 +386,15 @@ def source_iter(spec):
         while True:
             time.sleep(random.expovariate(rate) * 0.5 + 0.5 / rate)
             yield os.urandom(size)
+    if kind == "paced":                      # constant-rate producer on an absolute schedule
+        _, rate, size = spec.split(":"); rate, size = float(rate), int(size)
+        nxt = time.time()
+        while True:
+            nxt += 1.0 / rate
+            d = nxt - time.time()
+            if d > 0:
+                time.sleep(d)                    # behind schedule: no sleep, catch up
+            yield os.urandom(size)
     if kind == "stdin":
         for line in sys.stdin.buffer:
             yield line.rstrip(b"\r\n")
@@ -434,6 +444,7 @@ def adapter(a):
     send_frame(sock, ("HELLO", a.id, pub[0], pub[1]))
     assert recv_exact(sock, 1) == b"G"                  # wait for the service to open the epoch
     print(f"[adapter {a.id}] epoch open", flush=True)
+    t_open = time.time(); t_stop = [None]
     lock = threading.Lock(); stop = threading.Event(); closed = threading.Event()
     stats = {"manifests": 0, "resends": 0, "sign_s": []}
     def hb_loop():
@@ -477,17 +488,18 @@ def adapter(a):
     n = 0
     for c in source_iter(a.source):
         if stop.is_set():
-            break
+            t_stop[0] = time.time(); break
         with lock:
             if stop.is_set():
-                break
+                t_stop[0] = time.time(); break
             send_frame(sock, ad.chunk(c[: a.max_chunk]))
         n += 1
         if n % 100 == 0:
             print(f"[adapter {a.id}] sent {n} chunks", flush=True)
     closed.wait(timeout=600)
     import statistics
-    summ = dict(id=a.id, chunks=n, manifests=stats["manifests"], resends=stats["resends"],
+    run_s = (t_stop[0] or time.time()) - t_open
+    summ = dict(id=a.id, chunks=n, run_s=round(run_s, 3), achieved_rate=round(n / run_s, 2) if run_s > 0 else None, manifests=stats["manifests"], resends=stats["resends"],
                 sign_ms_median=round(1e3 * statistics.median(stats["sign_s"]), 2) if stats["sign_s"] else None,
                 xmss_keygen_s=signer.keygen_s if signer else None, host=os.uname().nodename)
     json.dump(summ, open(os.path.join(a.out, f"adapter{a.id}_{os.uname().nodename}.json"), "w"), indent=1)

@@ -74,8 +74,9 @@ A representative live run (ClusterHAT Pi 4 adapters with real GNSS/LiDAR → Pi 
 |---|---|
 | `results/attacks_rev16_signed/`, `results/attacks_rev16_mac/` | attack table of Online Resource 1 (44 scenarios × 8 trials, signed and MAC-only declarations) |
 | `results/sota_rev16/` | Table 2 (comparison with existing mechanisms, 20 missions per cell) |
-| `results/live/` | Fig. 3(a), the squares of Fig. 3(b), and the repair and custody results (per-window log and run summary of the live run) |
-| `results/bench_clusterhat.json` | Pi 4 microbenchmarks behind the circles of Fig. 3(b) |
+| `results/live/` | Fig. 3(a) and the repair and custody results (per-window log and run summary of the live run) |
+| `results/capacity/` | Fig. 3(b): measured capacity sweep on the Pi 4 (`python3 capacity.py`, about 25 min; 1598 chunks/s sustained) |
+| `results/bench_clusterhat.json` | Pi 4 microbenchmarks (signing, MAC, and hash costs quoted in Section 6) |
 | `results/fprime/` | F′ adapter run log (manifest timing and sealing cost) |
 | `results/validate_arm.txt`, `results/validate_x86.txt` | F′ shim byte-compatibility on the Pi 4 and on x86 |
 
