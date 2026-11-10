@@ -23,6 +23,12 @@ evidence that mechanism would hold; the verdict it can justify is scored against
                  a ledger, assumed honest here). Modelled with the adapters' signed manifests
                  and FINAL: same source evidence as NEITH-ACE, but no stage attribution, no
                  repair, no custody receipts.
+  NITRO          Zhao et al., CCS 2025: the logger tags every entry it logs with a forward-secure
+                 MAC and folds the tags into a MAC combiner; a verifier holding the initial key
+                 checks every logged entry and locates tampered or deleted ones. Its evidence
+                 starts at the logger: it trusts the logger to log what it received, so it is
+                 blind to chunks that never arrived, and a logger compromised from the start
+                 holds the keys. No source declaration, repair, or custody receipts.
   NEITH-ACE      full protocol: signed manifests + FINAL, repair, receipts, checkpoints.
 
 Verdict classes: COMPLETE, REPAIRED (complete after verified recovery), DETECTED (incomplete,
@@ -35,8 +41,8 @@ from collections import Counter
 import neith_ace as na
 import attacks as at
 
-SYSTEMS = ["LOGGER-MERKLE", "SYSLOG-SIGN", "SYSLOG-FRESH", "SDLS+CFDP", "DASLOG", "NEITH-ACE"]
-HAS_REPAIR = {"LOGGER-MERKLE": False, "SYSLOG-SIGN": False, "SYSLOG-FRESH": False,
+SYSTEMS = ["LOGGER-MERKLE", "NITRO", "SYSLOG-SIGN", "SYSLOG-FRESH", "SDLS+CFDP", "DASLOG", "NEITH-ACE"]
+HAS_REPAIR = {"LOGGER-MERKLE": False, "NITRO": False, "SYSLOG-SIGN": False, "SYSLOG-FRESH": False,
               "SDLS+CFDP": True, "DASLOG": False, "NEITH-ACE": True}
 
 def workloads(cfg, W):
@@ -72,6 +78,18 @@ def logger_merkle(res):
         return res["verdict"]
     missing = [k for k in leaves_committed(res) if res["store"].get(*k) is None]
     return "DETECTED" if missing else "COMPLETE"
+
+def nitro(res, H, compromised):
+    """Logger-side MAC log: every entry the service logged must be in storage, unmodified.
+    A compromised service holds the logging key, so its log verifies whatever it contains."""
+    if compromised:
+        return "COMPLETE"
+    for p in res["svc"].published:
+        t, N = p[0][0], p[0][1]
+        for pos in range(N):
+            if res["store"].get(t, pos) is None:
+                return "DETECTED"
+    return "COMPLETE"
 
 def syslog_sign(res, H):
     declared, ok = {}, True
@@ -178,6 +196,8 @@ def main():
                 res = runs[rep]
                 if sysname == "LOGGER-MERKLE":
                     v = logger_merkle(res)
+                elif sysname == "NITRO":
+                    v = nitro(res, H, compromised)
                 elif sysname == "SYSLOG-SIGN":
                     v = syslog_sign(res, H)
                 elif sysname == "SYSLOG-FRESH":

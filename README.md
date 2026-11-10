@@ -26,7 +26,7 @@ The headline guarantee: a compromised integrity service — holding the admissio
 |---|---|
 | `neith_ace.py` | the construction: adapter, manifests, integrity service, store, verifier, Merkle tree, XMSS/Ascon wrappers |
 | `attacks.py` | the 44 attack scenarios of Online Resource 1 × N randomized missions; verdict **and exact absence set** must match ground truth |
-| `sota.py` | models of five existing mechanisms (Merkle log, SDLS+CFDP, signed syslog with and without freshness, DASLog) and NEITH-ACE on identical missions (Table 2 of the paper) |
+| `sota.py` | reimplementations of existing mechanisms (Merkle log, Nitro, SDLS+CFDP, signed syslog with and without freshness, DASLog) and NEITH-ACE on identical missions (Table 4 of the paper) |
 | `tests/` | edge-case tests, e.g. a receipt not yet due keeps the verdict at Prefix |
 | `fprime/` | the F′ capture-adapter component, its crypto shim, and `validate.sh` (byte-compatibility check against the Python reference) |
 | `baselines.py` | earlier internal baselines (NEITH / sequence log / MAC-only / no-repair / full), kept for reference; the paper's comparison is `sota.py` |
@@ -73,7 +73,7 @@ A representative live run (ClusterHAT Pi 4 adapters with real GNSS/LiDAR → Pi 
 | Path | Paper |
 |---|---|
 | `results/attacks_rev16_signed/`, `results/attacks_rev16_mac/` | attack table of Online Resource 1 (44 scenarios × 8 trials, signed and MAC-only declarations) |
-| `results/sota_rev16/` | Table 2 (comparison with existing mechanisms, 20 missions per cell) |
+| `results/sota_rev17/` | Table 4 (comparison with existing mechanisms, 20 missions per cell; `sota_rev16/` is the same run without Nitro) |
 | `results/live/` | Fig. 3(a) and the repair and custody results (per-window log and run summary of the live run) |
 | `results/capacity/` | Fig. 3(b): measured capacity sweep on the Pi 4 (`python3 capacity.py`, about 25 min; 1598 chunks/s sustained) |
 | `results/bench_clusterhat.json` | Pi 4 microbenchmarks (signing, MAC, and hash costs quoted in Section 6) |
