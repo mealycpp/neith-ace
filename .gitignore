@@ -3,6 +3,8 @@ results/*
 !results/attacks_rev16_signed/
 !results/attacks_rev16_mac/
 !results/sota_rev16/
+!results/sota_rev17/
+!results/capacity/
 !results/live/
 !results/fprime/
 !results/bench_clusterhat.json

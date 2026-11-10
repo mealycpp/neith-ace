@@ -1,0 +1,88 @@
+{
+ "host": "clusterhat",
+ "source": "capacity.log from clusterhat, run capacity_clusterhat_20261110-031810 (complete)",
+ "runs": [
+  {
+   "offered_rate": 100,
+   "delivered_rate": 99.9,
+   "max_emit_latency_s": 0.6482,
+   "max_compute_s": 0.1384,
+   "verdict": "COMPLETE",
+   "passed": true
+  },
+  {
+   "offered_rate": 200,
+   "delivered_rate": 199.9,
+   "max_emit_latency_s": 0.7575,
+   "max_compute_s": 0.254,
+   "verdict": "COMPLETE",
+   "passed": true
+  },
+  {
+   "offered_rate": 400,
+   "delivered_rate": 399.9,
+   "max_emit_latency_s": 0.956,
+   "max_compute_s": 0.4471,
+   "verdict": "COMPLETE",
+   "passed": true
+  },
+  {
+   "offered_rate": 800,
+   "delivered_rate": 799.8,
+   "max_emit_latency_s": 1.3155,
+   "max_compute_s": 0.8113,
+   "verdict": "COMPLETE",
+   "passed": true
+  },
+  {
+   "offered_rate": 1600,
+   "delivered_rate": 1522.7,
+   "max_emit_latency_s": 2.5015,
+   "max_compute_s": 1.993,
+   "verdict": "COMPLETE",
+   "passed": true
+  },
+  {
+   "offered_rate": 2400,
+   "delivered_rate": 1512.5,
+   "max_emit_latency_s": 4.3945,
+   "max_compute_s": 3.8861,
+   "verdict": "COMPLETE",
+   "passed": false
+  },
+  {
+   "offered_rate": 2000,
+   "delivered_rate": 1559.5,
+   "max_emit_latency_s": 3.8464,
+   "max_compute_s": 3.3403,
+   "verdict": "COMPLETE",
+   "passed": false
+  },
+  {
+   "offered_rate": 1800,
+   "delivered_rate": 1603.0,
+   "max_emit_latency_s": 2.3718,
+   "max_compute_s": 1.8607,
+   "verdict": "COMPLETE",
+   "passed": false
+  },
+  {
+   "offered_rate": 1700,
+   "delivered_rate": 1567.4,
+   "max_emit_latency_s": 2.1734,
+   "max_compute_s": 1.6682,
+   "verdict": "COMPLETE",
+   "passed": false
+  },
+  {
+   "offered_rate": 1650,
+   "delivered_rate": 1597.7,
+   "max_emit_latency_s": 2.2212,
+   "max_compute_s": 1.7182,
+   "verdict": "COMPLETE",
+   "passed": true
+  }
+ ],
+ "capacity_chunks_per_s": 1597.7,
+ "capacity_MBps": 13.09
+}

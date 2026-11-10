@@ -1,0 +1,40 @@
+
+=== offered 100 chunks/s (2 adapters, 8192 B chunks) ===
+
+
+{"offered_rate": 100.0, "run": "r000100_031810", "delivered_rate": 99.9, "adapters_reported": 2, "chunks": 4062, "committed_telemetry": 3998, "max_emit_latency_s": 0.6482, "max_compute_s": 0.1384, "median_compute_s": 0.1011, "verdict": "COMPLETE", "n_absences": 0, "verify_s": 0.76, "mem_available_mb": 5584, "passed": true, "reason": "ok"}
+
+=== offered 200 chunks/s (2 adapters, 8192 B chunks) ===
+{"offered_rate": 200.0, "run": "r000200_031937", "delivered_rate": 199.9, "adapters_reported": 2, "chunks": 8144, "committed_telemetry": 7998, "max_emit_latency_s": 0.7575, "max_compute_s": 0.254, "median_compute_s": 0.2004, "verdict": "COMPLETE", "n_absences": 0, "verify_s": 1.53, "mem_available_mb": 5534, "passed": true, "reason": "ok"}
+
+=== offered 400 chunks/s (2 adapters, 8192 B chunks) ===
+{"offered_rate": 400.0, "run": "r000400_032104", "delivered_rate": 399.9, "adapters_reported": 2, "chunks": 16387, "committed_telemetry": 15993, "max_emit_latency_s": 0.956, "max_compute_s": 0.4471, "median_compute_s": 0.3906, "verdict": "COMPLETE", "n_absences": 0, "verify_s": 3.121, "mem_available_mb": 5531, "passed": true, "reason": "ok"}
+
+=== offered 800 chunks/s (2 adapters, 8192 B chunks) ===
+{"offered_rate": 800.0, "run": "r000800_032233", "delivered_rate": 799.8, "adapters_reported": 2, "chunks": 33055, "committed_telemetry": 31992, "max_emit_latency_s": 1.3155, "max_compute_s": 0.8113, "median_compute_s": 0.7658, "verdict": "COMPLETE", "n_absences": 0, "verify_s": 6.325, "mem_available_mb": 5592, "passed": true, "reason": "ok"}
+
+=== offered 1600 chunks/s (2 adapters, 8192 B chunks) ===
+
+
+{"offered_rate": 1600.0, "run": "r001600_032407", "delivered_rate": 1522.7, "adapters_reported": 2, "chunks": 65592, "committed_telemetry": 62999, "max_emit_latency_s": 2.5015, "max_compute_s": 1.993, "median_compute_s": 1.4648, "verdict": "COMPLETE", "n_absences": 0, "verify_s": 12.932, "mem_available_mb": 5643, "passed": true, "reason": "ok"}
+{"offered_rate": 3200.0, "passed": null, "reason": "skipped: needs ~4500 MB, 5643 MB free"}
+
+=== offered 2400 chunks/s (2 adapters, 8192 B chunks) ===
+{"offered_rate": 2400, "run": "r002400_032551", "delivered_rate": 1512.5, "adapters_reported": 2, "chunks": 64265, "committed_telemetry": 61171, "max_emit_latency_s": 4.3945, "max_compute_s": 3.8861, "median_compute_s": 1.7933, "verdict": "COMPLETE", "n_absences": 0, "verify_s": 12.681, "mem_available_mb": 5669, "passed": false, "reason": "delivered 1513 < 95% of offered"}
+
+=== offered 2000 chunks/s (2 adapters, 8192 B chunks) ===
+{"offered_rate": 2000, "run": "r002000_032734", "delivered_rate": 1559.5, "adapters_reported": 2, "chunks": 66624, "committed_telemetry": 63164, "max_emit_latency_s": 3.8464, "max_compute_s": 3.3403, "median_compute_s": 1.6761, "verdict": "COMPLETE", "n_absences": 0, "verify_s": 13.242, "mem_available_mb": 5721, "passed": false, "reason": "delivered 1559 < 95% of offered"}
+
+=== offered 1800 chunks/s (2 adapters, 8192 B chunks) ===
+{"offered_rate": 1800, "run": "r001800_032918", "delivered_rate": 1603.0, "adapters_reported": 2, "chunks": 68695, "committed_telemetry": 65145, "max_emit_latency_s": 2.3718, "max_compute_s": 1.8607, "median_compute_s": 1.6162, "verdict": "COMPLETE", "n_absences": 0, "verify_s": 13.665, "mem_available_mb": 5741, "passed": false, "reason": "delivered 1603 < 95% of offered"}
+
+=== offered 1700 chunks/s (2 adapters, 8192 B chunks) ===
+{"offered_rate": 1700, "run": "r001700_033103", "delivered_rate": 1567.4, "adapters_reported": 2, "chunks": 66989, "committed_telemetry": 63452, "max_emit_latency_s": 2.1734, "max_compute_s": 1.6682, "median_compute_s": 1.5428, "verdict": "COMPLETE", "n_absences": 0, "verify_s": 13.276, "mem_available_mb": 5729, "passed": false, "reason": "delivered 1567 < 95% of offered"}
+
+=== offered 1650 chunks/s (2 adapters, 8192 B chunks) ===
+{"offered_rate": 1650, "run": "r001650_033247", "delivered_rate": 1597.7, "adapters_reported": 2, "chunks": 68109, "committed_telemetry": 64418, "max_emit_latency_s": 2.2212, "max_compute_s": 1.7182, "median_compute_s": 1.6551, "verdict": "COMPLETE", "n_absences": 0, "verify_s": 13.515, "mem_available_mb": 5621, "passed": true, "reason": "ok"}
+
+MEASURED CAPACITY on clusterhat: 1597.7 chunks/s (13.09 MB/s of 8192-byte chunks), every window k=1 signed, verdict COMPLETE, no-stutter held.
+-> /home/hadedy/neith-ace/kit/v4/results/capacity_clusterhat_20261110-031810
+
+
