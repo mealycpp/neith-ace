@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite the NEITH-ACE article."
-title: "NEITH-ACE: Authenticated Completeness and Loss Attribution for Edge Telemetry"
+title: "NEITH-ACE: Authenticated Telemetry Completeness and Loss Attribution for Small-Spacecraft Flight Software"
 authors:
   - family-names: "El-Hadedy"
     given-names: "Mohamed"

@@ -1,45 +1,45 @@
 scenario,position,trials,passed,verdicts,verify_ms_median,verify_ms_p95
-benign,none,8,8,"{""COMPLETE"": 8}",42.18,44.97
-retransmit,none,8,8,"{""COMPLETE"": 8}",42.88,48.04
-drop-chunk,link,8,8,"{""ACCOUNTED"": 8}",44.92,48.2
-drop-burst,link,8,8,"{""ACCOUNTED"": 8}",42.36,43.89
-silence-chunks+heartbeats,link,8,8,"{""STALE"": 8}",42.66,46.87
-modify-payload,link,8,8,"{""ACCOUNTED"": 8}",43.57,46.29
-inject-forged-chunks+heartbeats,link,8,8,"{""COMPLETE"": 8}",43.11,50.17
-replay-old-chunks,link,8,8,"{""COMPLETE"": 8}",41.83,46.75
-reorder-within-window,link,8,8,"{""COMPLETE"": 8}",41.89,43.28
-delay-across-window,link,8,8,"{""REPAIRED"": 8}",43.73,54.55
-delete-window,publication,8,8,"{""INVALID"": 8}",0.08,1.13
-insert-window,publication,8,8,"{""INVALID"": 8}",1.15,1.31
-swap-windows,publication,8,8,"{""INVALID"": 8}",0.09,1.09
-truncate-tail,publication,8,8,"{""WITHHELD"": 8}",1.12,1.32
-substitute-record+recompute-chain,publication,8,8,"{""INVALID"": 8}",2.77,3.51
-forge-checkpoint,publication,8,8,"{""INVALID"": 8}",4.08,4.14
-withhold-receipt,custody,8,8,"{""ACCOUNTED"": 8}",47.75,65.13
-tamper-handoff,custody,8,8,"{""ACCOUNTED"": 8}",42.18,50.37
-delete-stored-chunk,custody,8,8,"{""ACCOUNTED"": 8}",42.24,45.67
-substitute-stored-chunk,custody,8,8,"{""ACCOUNTED"": 8}",42.28,45.88
-drop-burst+repair,link,8,8,"{""REPAIRED"": 8}",42.98,49.77
-modify-payload+repair,link,8,8,"{""REPAIRED"": 8}",42.09,42.57
-drop-burst+repair-after-retry,link,8,8,"{""REPAIRED"": 8}",42.03,43.9
-drop-burst+requests-suppressed,link,8,8,"{""ACCOUNTED"": 8}",42.13,47.63
-forged-resend-requests,link,8,8,"{""COMPLETE"": 8}",44.03,51.37
-compromised-IS: erase gaps + re-sign,service,8,8,"{""ACCOUNTED"": 8}",41.7,49.23
-compromised-IS: fabricate chunks,service,8,8,"{""COMPLETE"": 8}",42.04,47.31
-compromised-IS: omit manifests,service,8,8,"{""INVALID"": 8}",5.96,7.62
-compromised-IS: hide newest blocks,service,8,8,"{""COMPLETE"": 8}",37.72,41.02
-duplicate-inflation,link,8,8,"{""COMPLETE"": 8}",42.86,48.66
-receipt-bound-to-wrong-window,custody,8,8,"{""ACCOUNTED"": 8}",42.3,43.93
-compromised-IS: fake gap then fabricated late leaf,service,8,8,"{""INVALID"": 8}",4.17,4.47
-compromised-IS: fake gap then duplicate leaf,service,8,8,"{""INVALID"": 8}",4.33,4.55
-compromised-IS: forge unreceipted last window,service,8,8,"{""PREFIX"": 8}",40.44,49.51
+benign,none,8,8,"{""COMPLETE"": 8}",35.72,37.06
+retransmit,none,8,8,"{""COMPLETE"": 8}",37.12,40.66
+drop-chunk,link,8,8,"{""ACCOUNTED"": 8}",33.71,35.55
+drop-burst,link,8,8,"{""ACCOUNTED"": 8}",36.33,42.47
+silence-chunks+heartbeats,link,8,8,"{""STALE"": 8}",33.32,35.66
+modify-payload,link,8,8,"{""ACCOUNTED"": 8}",36.76,45.67
+inject-forged-chunks+heartbeats,link,8,8,"{""COMPLETE"": 8}",35.94,36.26
+replay-old-chunks,link,8,8,"{""COMPLETE"": 8}",44.48,49.55
+reorder-within-window,link,8,8,"{""COMPLETE"": 8}",37.1,45.14
+delay-across-window,link,8,8,"{""REPAIRED"": 8}",29.07,31.14
+delete-window,publication,8,8,"{""INVALID"": 8}",0.07,0.88
+insert-window,publication,8,8,"{""INVALID"": 8}",0.97,0.99
+swap-windows,publication,8,8,"{""INVALID"": 8}",0.08,0.76
+truncate-tail,publication,8,8,"{""WITHHELD"": 8}",0.95,1.06
+substitute-record+recompute-chain,publication,8,8,"{""INVALID"": 8}",1.93,3.28
+forge-checkpoint,publication,8,8,"{""INVALID"": 8}",3.22,3.52
+withhold-receipt,custody,8,8,"{""ACCOUNTED"": 8}",34.45,37.18
+tamper-handoff,custody,8,8,"{""ACCOUNTED"": 8}",36.21,41.53
+delete-stored-chunk,custody,8,8,"{""ACCOUNTED"": 8}",32.06,34.26
+substitute-stored-chunk,custody,8,8,"{""ACCOUNTED"": 8}",35.55,38.73
+drop-burst+repair,link,8,8,"{""REPAIRED"": 8}",37.04,40.29
+modify-payload+repair,link,8,8,"{""REPAIRED"": 8}",31.05,38.27
+drop-burst+repair-after-retry,link,8,8,"{""REPAIRED"": 8}",37.88,43.62
+drop-burst+requests-suppressed,link,8,8,"{""ACCOUNTED"": 8}",36.38,42.04
+forged-resend-requests,link,8,8,"{""COMPLETE"": 8}",34.17,36.25
+compromised-IS: erase gaps + re-sign,service,8,8,"{""ACCOUNTED"": 8}",34.92,36.1
+compromised-IS: fabricate chunks,service,8,8,"{""COMPLETE"": 8}",29.78,36.22
+compromised-IS: omit manifests,service,8,8,"{""INVALID"": 8}",4.61,5.55
+compromised-IS: hide newest blocks,service,8,8,"{""COMPLETE"": 8}",25.37,25.67
+duplicate-inflation,link,8,8,"{""COMPLETE"": 8}",35.16,37.19
+receipt-bound-to-wrong-window,custody,8,8,"{""ACCOUNTED"": 8}",35.24,38.79
+compromised-IS: fake gap then fabricated late leaf,service,8,8,"{""INVALID"": 8}",3.72,4.03
+compromised-IS: fake gap then duplicate leaf,service,8,8,"{""INVALID"": 8}",3.93,5.25
+compromised-IS: forge unreceipted last window,service,8,8,"{""PREFIX"": 8}",34.21,36.58
 compromised-IS: substitute genesis,service,8,8,"{""INVALID"": 8}",0.04,0.05
-"honest history, late audit",none,8,8,"{""COMPLETE"": 8}",42.9,46.95
-"honest history, late audit, shutdown on a scheduled checkpoint",none,8,8,"{""COMPLETE"": 8}",37.33,39.82
-checkpoint not yet due at audit,publication,8,8,"{""PREFIX"": 8}",18.92,19.31
-drop-manifest+repair,link,8,8,"{""COMPLETE"": 8}",40.96,41.55
-drop-manifest+requests-suppressed,link,8,8,"{""COMPLETE"": 8}",41.81,43.95
-"honest history, shutdown on a scheduled checkpoint, on-time audit",none,8,8,"{""COMPLETE"": 8}",38.85,41.62
-shutdown checkpoint on a scheduled window withheld,publication,8,8,"{""WITHHELD"": 8}",1.19,1.27
-compromised-IS: end checkpoint in mid-history,service,8,8,"{""INVALID"": 8}",2.59,3.77
-receipt with a short bitmap,custody,8,8,"{""ACCOUNTED"": 8}",41.4,48.35
+"honest history, late audit",none,8,8,"{""COMPLETE"": 8}",36.17,37.7
+"honest history, late audit, shutdown on a scheduled checkpoint",none,8,8,"{""COMPLETE"": 8}",30.12,34.21
+checkpoint not yet due at audit,publication,8,8,"{""PREFIX"": 8}",19.88,24.52
+drop-manifest+repair,link,8,8,"{""COMPLETE"": 8}",37.04,45.15
+drop-manifest+requests-suppressed,link,8,8,"{""COMPLETE"": 8}",39.55,51.95
+"honest history, shutdown on a scheduled checkpoint, on-time audit",none,8,8,"{""COMPLETE"": 8}",32.85,35.07
+shutdown checkpoint on a scheduled window withheld,publication,8,8,"{""WITHHELD"": 8}",0.94,0.98
+compromised-IS: end checkpoint in mid-history,service,8,8,"{""INVALID"": 8}",1.76,2.09
+receipt with a short bitmap,custody,8,8,"{""ACCOUNTED"": 8}",36.15,41.49

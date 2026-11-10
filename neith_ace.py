@@ -630,6 +630,7 @@ class Verifier:
         # (signed by the store) decide only where an absence is attributed
         unaudited = store is None
         pending_custody = False
+        altered = []                                # supplied openings that failed verification
         for t, N, T, rec_enc in decoded:
             ids = ids_by_t[t]
             depth = (N - 1).bit_length() if N > 1 else 0
@@ -639,16 +640,25 @@ class Verifier:
                 q, bm = q_bm
                 # a receipt whose bitmap has the wrong length acknowledges nothing (never INVALID:
                 # a malformed receipt is the store's fault, not the history's)
-                if len(bm) == (N + 7) // 8 and xmss_verify(self.store_pub, q, enc("rcpt", cfg.epoch, t, N) + T + bm):
+                # canonical bitmap: exactly ceil(N/8) bytes and no bit set beyond position N-1
+                canonical = len(bm) == (N + 7) // 8 and (N % 8 == 0 or bm[-1] >> (N % 8) == 0)
+                if canonical and xmss_verify(self.store_pub, q, enc("rcpt", cfg.epoch, t, N) + T + bm):
                     ok_bits = {p for p in range(N) if (bm[p // 8] >> (p % 8)) & 1}
             deadline_passed = now is None or now >= cfg.delta * (t + 1) + cfg.theta_st
             for pos in range(N):
                 i, s = ids[pos]
+                # opened: the store supplied an opening AND it verifies against the committed root.
+                # A supplied opening that fails verification is recorded as altered; like an
+                # unavailable one it means the store cannot produce the committed chunk, so it is
+                # attributed to custody (or the handoff), never INVALID: the store is untrusted, and
+                # its misconduct must not let it invalidate the history the service committed.
                 opened = False
                 if store is not None:
                     got = store.get(t, pos)
                     opened = (got is not None and got[0] == i and got[1] == s and len(got[3]) == depth and
                               root_from_path(H, leaf_value(H, cfg.epoch, t, i, s, got[2]), pos, got[3]) == T)
+                    if got is not None and not opened:
+                        altered.append((i, s))
                     if opened and cfg.decl == "signed" and i in self.adapter_pubs:
                         d = declared.get(i, {}).get(s)
                         if d is not None and H(got[2]) != d:
@@ -663,6 +673,8 @@ class Verifier:
                     # history cannot be COMPLETE or REPAIRED yet, even if the store produced it
                     pending_custody = True
         info = {"repairs": sorted(repairs)}
+        if altered:
+            info["altered"] = sorted(altered)
         if unaudited or pending_custody:
             info["unaudited"] = True
         if pending_tail:
