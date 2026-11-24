@@ -1,114 +1,85 @@
-<p align="center">
-  <img src="assets/rscl-logo.png" alt="Reconfigurable Space Computing Lab" width="200"/>
-</p>
-
 # NEITH-ACE
 
-Reference implementation, attack injector, benchmark scripts, and measurement logs for **NEITH-ACE: Authenticated Telemetry Completeness and Loss Attribution for Small-Spacecraft Flight Software** (Journal of Hardware and Systems Security, submitted November 2026), the journal extension of NEITH (IEEE SATC 2026). This release corresponds to manuscript revision rev16f.
+Code, attack injector, and measurement logs for
 
-NEITH committed *what arrived*. NEITH-ACE commits *what should have arrived*, *what actually arrived*, and the last authenticated boundary each item crossed — and keeps that account verifiable **even when the integrity service is fully compromised**. Every number in the paper comes from these scripts running on real hardware. Hashing, MACs, XMSS signatures, `fsync`'d store persistence, and TCP transport are all real; only `attacks.py` simulates time so it can run thousands of missions, and its cryptography is real too.
+> M. El-Hadedy, "NEITH-ACE: Authenticated Telemetry Completeness and Loss Attribution for Small-Spacecraft Flight Software," submitted to the *Journal of Hardware and Systems Security* (Springer), November 2026.
 
-<p align="center">
-  <img src="assets/architecture.png" alt="NEITH-ACE architecture: capture adapter, adversarial link peer, integrity service, storage custodian, and independent regulator verifier, resolving to Complete / Repaired / Accounted / Invalid-or-withheld" width="820"/>
-</p>
+NEITH-ACE extends NEITH (IEEE SATC 2026). NEITH proves that what reached the onboard logger was not changed. NEITH-ACE also proves the record is complete: each capture adapter signs chained manifests of the chunks it captured, under a key the logger never holds, so a verifier can tell what is missing and where the evidence for each missing chunk ends, even if the logger is compromised.
 
-The adversary sits on the link between the capture adapter and the integrity service, and again as the downstream storage custodian; the regulator verifier is independent. It may hold the telemetry but cannot make its own, replayed, or altered data appear to originate freshly from the adapter.
-
-## What it does
-
-Telemetry flows from per-sensor **capture adapters** → an **integrity service** → an untrusted **storage custodian**, and an independent **regulator verifier** audits the result. Each adapter signs a chained **manifest** of the digests it captured, under a key the service never holds, so completeness is judged against the capture source rather than the intermediary. Window roots chain and are checkpointed with XMSS. The verifier returns one of **Complete / Repaired / Accounted / Stale / Withheld / Invalid / Prefix**, with the exact set of missing items and, under an honest service, the boundary each crossed.
-
-The headline guarantee: a compromised integrity service — holding the admission keys and its own signing key — **cannot certify an incomplete subset of the adapter's declared record as complete**.
-
-## Layout
-
-| File | Role |
-|---|---|
-| `neith_ace.py` | the construction: adapter, manifests, integrity service, store, verifier, Merkle tree, XMSS/Ascon wrappers |
-| `attacks.py` | the 44 attack scenarios of Online Resource 1 × N randomized missions; verdict **and exact absence set** must match ground truth |
-| `sota.py` | reimplementations of existing mechanisms (Merkle log, Nitro, SDLS+CFDP, signed syslog with and without freshness, DASLog) and NEITH-ACE on identical missions (Table 4 of the paper) |
-| `tests/` | edge-case tests, e.g. a receipt not yet due keeps the verdict at Prefix |
-| `fprime/` | the F′ capture-adapter component, its crypto shim, and `validate.sh` (byte-compatibility check against the Python reference) |
-| `baselines.py` | earlier internal baselines (NEITH / sequence log / MAC-only / no-repair / full), kept for reference; the paper's comparison is `sota.py` |
-| `bench.py` | primitive costs: hashes, MACs, tree/record/root, XMSS h=10/16/20 (keygen, sign incl. fsync, verify, sizes) |
-| `live.py` | real-time pipeline over TCP: `adapter`, `serve` (integrity service), `store` (custodian + regulator) |
-| `make_tables.py` | emits the LaTeX tables from the result JSON/CSV |
-| `run_all.sh` | one-command host / worker passes |
-| `native/`, `vendor/` | C glue + vendored ascon-c, xmss-reference, pyascon (all CC0) |
+The verifier returns one of Complete, Repaired, Accounted, Prefix, Stale, Withheld, or Invalid, together with the exact set of missing chunks.
 
 ## Build
 
 ```bash
-./build.sh        # compiles the Ascon and XMSS native libs, installs pycryptodome
+./build.sh   # builds the Ascon and XMSS native libraries, installs pycryptodome
 python3 -c "import neith_ace as na; na.XMSS('XMSS-SHAKE256_10_256'); print('ok')"
 ```
 
-## Reproduce the experiments
+Tested on a Raspberry Pi 4 and on x86-64 Linux.
 
-**Single host** (benchmarks, attacks, baselines, local live runs):
-```bash
-nohup ./run_all.sh pi4 > pi4.out 2>&1 &
-```
+## Reproduce the paper
 
-**Three authority domains over the network** — capture adapters on the edge host, integrity service on a separate edge node, store + regulator on a separate machine:
+| Paper item | Command | Result in this repo |
+|---|---|---|
+| Attack table (Online Resource 1) | `python3 attacks.py --trials 8 --out results/x` (add `--decl mac` for the MAC-only run) | `results/attacks_rev16_signed/`, `results/attacks_rev16_mac/` |
+| Table 4, comparison | `python3 sota.py --out results/x` | `results/sota_rev17/` |
+| Fig. 3(a), repair and custody results | `live.py` over three machines (below) | `results/live/` |
+| Fig. 3(b), measured capacity | `python3 capacity.py` (about 25 min on a Pi 4) | `results/capacity/` |
+| Cost figures in Section 6 | `python3 bench.py` | `results/bench_clusterhat.json` |
+| F′ adapter timing | see `fprime/README.md` | `results/fprime/` |
+| Edge-case tests | `python3 tests/test_pending_custody.py`, `python3 tests/test_receipts_openings.py` | |
+
+`attacks.py` and `sota.py` use the fixed seed 2026. `attacks.py` simulates time so it can run many missions; its cryptography is real.
+
+### Live run over three machines
+
 ```bash
-# storage + regulator (start first); --malicious 1 makes it a cheating store
+# store and verifier (start first); --malicious 1 makes the store cheat
 python3 live.py store --port 7701 --xmss XMSS-SHAKE256_10_256 --out results/net [--malicious 1]
 
 # integrity service; --drop injects link loss, --repair requests resends
-python3 live.py serve --windows 32 --drop 0.05 --store <STORE_IP>:7701 --out results/net
+python3 live.py serve --windows 32 --drop 0.05 --repair 1 --store <STORE_IP>:7701 --out results/net
 
-# capture adapters, with real sensors
-stty -F /dev/ttyUSB0 230400 raw -echo; stty -F /dev/ttyACM0 raw -echo
+# capture adapters with real sensors
 python3 live.py adapter --connect <SERVICE_IP>:7700 --id 0 --source serial:/dev/ttyACM0 --out results/net &
 python3 live.py adapter --connect <SERVICE_IP>:7700 --id 1 --source serialblock:/dev/ttyUSB0:8192 --out results/net &
 ```
 
-A representative live run (ClusterHAT Pi 4 adapters with real GNSS/LiDAR → Pi Zero service → separate ARM store+regulator, cheating store, 5 % link loss): **205 dropped chunks all repaired, 11 custodian-tampered chunks attributed exactly as CustodyLoss and no others, verdict Accounted**, root emission ≈0.5 s inside a 10 s window, zero false completeness.
+## Files
 
-`--decl mac` on `serve` and `adapter` runs the MAC-only baseline, which a compromised service *can* fool — the counterexample the signed manifests close.
-
-## Results in this release
-
-| Path | Paper |
+| Path | Contents |
 |---|---|
-| `results/attacks_rev16_signed/`, `results/attacks_rev16_mac/` | attack table of Online Resource 1 (44 scenarios × 8 trials, signed and MAC-only declarations) |
-| `results/sota_rev17/` | Table 4 (comparison with existing mechanisms, 20 missions per cell; `sota_rev16/` is the same run without Nitro) |
-| `results/live/` | Fig. 3(a) and the repair and custody results (per-window log and run summary of the live run) |
-| `results/capacity/` | Fig. 3(b): measured capacity sweep on the Pi 4 (`python3 capacity.py`, about 25 min; 1598 chunks/s sustained) |
-| `results/bench_clusterhat.json` | Pi 4 microbenchmarks (signing, MAC, and hash costs quoted in Section 6) |
-| `results/fprime/` | F′ adapter run log (manifest timing and sealing cost) |
-| `results/validate_arm.txt`, `results/validate_x86.txt` | F′ shim byte-compatibility on the Pi 4 and on x86 |
-
-Rerun the attack table with `python3 attacks.py --trials 8 --out results/x` and `python3 attacks.py --trials 8 --decl mac --out results/x`, and the comparison with `python3 sota.py --out results/x`; both use the fixed seed 2026.
+| `neith_ace.py` | the scheme: adapter, manifests, integrity service, store, verifier |
+| `attacks.py` | the 44 attack scenarios, checked against ground truth |
+| `sota.py` | reimplementations of existing mechanisms for the comparison |
+| `live.py` | real-time pipeline over TCP (`adapter`, `serve`, `store`) |
+| `capacity.py` | capacity sweep behind Fig. 3(b) |
+| `bench.py` | cost of hashes, MACs, and XMSS signing |
+| `baselines.py` | earlier internal baselines, kept for reference |
+| `make_tables.py` | builds the LaTeX tables from the results |
+| `fprime/` | F′ capture adapter and custodian components |
+| `tests/` | edge-case tests |
+| `native/`, `vendor/` | C glue and vendored ascon-c, xmss-reference, pyascon |
 
 ## Citation
+
+Until the journal article appears, please cite the conference paper:
 
 ```bibtex
 @inproceedings{elhadedy2026neith,
   author    = {El-Hadedy, Mohamed},
   title     = {{NEITH}: Networked Evidence Integrity for Telemetry Hashing},
   booktitle = {2026 IEEE 2nd International Conference on Secure IoT, Assured and Trusted Computing (SATC)},
-  year      = {2026}, pages = {1--5}, doi = {10.1109/SATC69565.2026.11542491}
+  year      = {2026},
+  pages     = {1--5},
+  doi       = {10.1109/SATC69565.2026.11542491}
 }
 ```
-The NEITH-ACE journal article is in preparation; see `CITATION.cff`.
 
 ## License
 
-MIT for this project's code (`LICENSE`). Vendored code under `vendor/` (ascon-c, xmss-reference, pyascon) is CC0-1.0 by its original authors.
+MIT (`LICENSE`). Code under `vendor/` is CC0-1.0 by its original authors.
 
 ## Acknowledgements
 
-Developed in the Reconfigurable Space Computing Lab (RSCL) at California State Polytechnic University, Pomona. Supported by the U.S. Navy NEEC (N00174-23-1-0002), the ONR Summer Faculty Research Program, the U.S. DoD (W911NF-24-1-0265), and AFRL (FA8650-24-2-2403). Development boards provided by AMD. The views and conclusions herein are the author's and do not necessarily represent the policies or endorsements of AFRL or the U.S. Government.
-
-<p align="center">
-  <img src="assets/neec.png" alt="U.S. Navy NEEC — Grant N00174-23-1-0002" height="150"/>
-  <img src="assets/onr-sfrp.png" alt="ONR Summer Faculty Research Program" height="150"/>
-  <img src="assets/dod.png" alt="U.S. DoD — Award W911NF-24-1-0265" height="150"/>
-  <img src="assets/afrl.png" alt="AFRL — Agreement FA8650-24-2-2403" height="150"/>
-</p>
-
-## F´ components
-
-`fprime/` holds the capture adapter and custodian as F´ active components (see `fprime/README.md`). The adapter was measured inside a running F´ deployment on the Pi 4; `results/fprime/` has the log.
+Developed in the Reconfigurable Space Computing Lab, California State Polytechnic University, Pomona. Supported by the U.S. Navy Naval Engineering Education Consortium (N00174-23-1-0002), the ONR Summer Faculty Research Program, the U.S. Army Research Office (W911NF-24-1-0265), and the Air Force Research Laboratory (FA8650-24-2-2403). AMD provided development boards. The views expressed are the author's and do not necessarily represent those of AFRL or the U.S. Government.
