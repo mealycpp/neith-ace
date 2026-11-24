@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/rscl-logo.png" alt="Reconfigurable Space Computing Lab" width="200"/>
+</p>
+
 # NEITH-ACE
 
 **Authenticated telemetry completeness and loss attribution for small-spacecraft flight software**
@@ -257,3 +261,10 @@ MIT (`LICENSE`). Code under `vendor/` is CC0-1.0 by its original authors.
 ## Acknowledgements
 
 Developed in the Reconfigurable Space Computing Lab, California State Polytechnic University, Pomona. Supported by the U.S. Navy Naval Engineering Education Consortium (N00174-23-1-0002), the ONR Summer Faculty Research Program, the U.S. Army Research Office (W911NF-24-1-0265), and the Air Force Research Laboratory (FA8650-24-2-2403). AMD provided development boards. The views expressed are the author's and do not necessarily represent those of AFRL or the U.S. Government.
+
+<p align="center">
+  <img src="assets/neec.png" alt="U.S. Navy NEEC — Grant N00174-23-1-0002" height="150"/>
+  <img src="assets/onr-sfrp.png" alt="ONR Summer Faculty Research Program" height="150"/>
+  <img src="assets/dod.png" alt="U.S. DoD — Award W911NF-24-1-0265" height="150"/>
+  <img src="assets/afrl.png" alt="AFRL — Agreement FA8650-24-2-2403" height="150"/>
+</p>
